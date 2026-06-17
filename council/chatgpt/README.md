@@ -16,9 +16,10 @@ constraints (privacy, performance, cold-start, two audiences). Cite sources, fla
 **never fabricate or expand scope.** Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-013** — Fruit → data-class legend + Explorer hierarchy → see [`briefs/ORCH-013.md`](briefs/ORCH-013.md).
+- **ORCH-014** — Node-state & gamification model → see [`briefs/ORCH-014.md`](briefs/ORCH-014.md).
 
 ## Done
+- **ORCH-013** — fruit → data-class legend → [`../../docs/product/fruit-data-legend.md`](../../docs/product/fruit-data-legend.md)
 - **ORCH-012** — information architecture / sitemap → [`../../docs/product/information-architecture.md`](../../docs/product/information-architecture.md)
 - **ORCH-011** — personas + primary action → [`../../docs/product/personas-and-primary-action.md`](../../docs/product/personas-and-primary-action.md)
 - **ORCH-010** — positioning & category (ratified, ADR-0003) → [`../../docs/product/positioning-2036.md`](../../docs/product/positioning-2036.md)

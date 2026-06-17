@@ -326,7 +326,7 @@ window.TASKS = {
       "id": "ORCH-013",
       "title": "Fruit -> data-class legend",
       "owner": "chatgpt",
-      "status": "assigned",
+      "status": "done",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -352,7 +352,7 @@ window.TASKS = {
       "id": "ORCH-014",
       "title": "Node-state & gamification model",
       "owner": "chatgpt",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [
@@ -460,7 +460,7 @@ window.TASKS = {
       "id": "ORCH-023",
       "title": "Nonprofit / compliance research",
       "owner": "gemini",
-      "status": "assigned",
+      "status": "done",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [

@@ -17,9 +17,10 @@ data, studies, or links.** No scope creep. Out-of-scope ideas → a "Proposed fo
 
 
 ## Active
-- **ORCH-023** — Nonprofit / compliance research → see [`briefs/ORCH-023.md`](briefs/ORCH-023.md).
+- **None — all Phase 1 Research tasks complete.** ✅ Awaiting Phase 2 assignments.
 
 ## Done
+- **ORCH-023** — nonprofit / compliance research → [`../../docs/research/nonprofit-compliance.md`](../../docs/research/nonprofit-compliance.md)
 - **ORCH-022** — financial model v0 → [`../../docs/research/financial-model-v0.md`](../../docs/research/financial-model-v0.md)
 - **ORCH-021** — data buyers & use cases → [`../../docs/research/data-buyers-and-use-cases.md`](../../docs/research/data-buyers-and-use-cases.md)
 - **ORCH-020** — DePIN competitor teardown → [`../../docs/research/competitors.md`](../../docs/research/competitors.md)

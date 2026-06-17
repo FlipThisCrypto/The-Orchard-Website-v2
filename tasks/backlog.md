@@ -54,6 +54,16 @@
 | $JUICE emissions decay curve over 520 weeks | Gemini ORCH-022 | Ensure reward pool lasts to Y10 | later / Gemini |
 | Reference others' tactics in X threads ("what others are testing") | Grok ORCH-032 | Show awareness without copying | 2 / Grok |
 
+## From Phase 1 — round 4 (triaged 2026-06-17)
+
+| Idea | Source | Why | Phase / owner |
+|---|---|---|---|
+| **Decision (big): token + commercial sales likely a SEPARATE entity from the 501(c)(3)** | Gemini ORCH-023 | Burn-and-mint to holders is a private-benefit red flag; tandem structure is the standard fix | later / Richard + counsel |
+| Research tandem structure (501c3 + for-profit sub) & Wyoming DUNA | Gemini ORCH-023 | Standard Web3 legal split / alternative wrapper | later / Gemini |
+| Decision: pressure = own pear class vs. bundled under microclimate | ChatGPT ORCH-013 | Avoid clutter until pressure earns distinct value | 2 / Richard+ChatGPT |
+| Decision: GPS as a fruit vs. device metadata | ChatGPT ORCH-013 | Don't imply exact location (Lead leans: metadata) | 2 / Lead |
+| Data-quality / calibration labels before buyer-facing claims | ChatGPT ORCH-013 + Gemini ORCH-021 | B2B buyers won't trust uncalibrated data | later |
+
 ## How to use this file
 
 - One row per idea: **what** + **why** + a guess at phase/owner.

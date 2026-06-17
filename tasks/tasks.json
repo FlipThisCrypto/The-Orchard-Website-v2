@@ -120,7 +120,7 @@
     },
     {
       "id": "ORCH-013", "title": "Fruit -> data-class legend", "owner": "chatgpt",
-      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/VISION.md"],
       "scope_in": "The legend mapping fruit types to sensor/data classes; how size/color/freshness encode real metrics; rules that keep it legible (not cluttered) and scalable from 3 to 100k Trees.",
       "scope_out": "3D rendering implementation (Lead); exact color hex (defer to brand).",
@@ -129,7 +129,7 @@
     },
     {
       "id": "ORCH-014", "title": "Node-state & gamification model", "owner": "chatgpt",
-      "status": "ready", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-013"],
+      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-013"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "What a Tree looks/does across states (healthy, idle, offline, failed, withered, new growth); honest gamification that motivates uptime without hype or fake density.",
       "scope_out": "Reward math (Gemini/ChatGPT-design separate); rendering (Lead).",
@@ -166,7 +166,7 @@
     },
     {
       "id": "ORCH-023", "title": "Nonprofit / compliance research", "owner": "gemini",
-      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "Research how a 501(c)(3) interacts with token/NFT/crypto activity: UBIT, charitable solicitation, data-as-public-good vs. commercial use; summarize considerations and where a professional is required.",
       "scope_out": "Giving legal advice; choosing a structure (that's Richard's call with counsel).",
