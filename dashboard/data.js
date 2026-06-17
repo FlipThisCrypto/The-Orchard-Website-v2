@@ -1,0 +1,637 @@
+// AUTO-GENERATED from tasks/tasks.json by scripts/generate.mjs — do not edit by hand.
+window.TASKS = {
+  "project": "The Orchard v2 — Website",
+  "repo": "FlipThisCrypto/The-Orchard-Website-v2",
+  "updated": "2026-06-17",
+  "note": "Canonical source of truth for all tasks. TASKS.md and dashboard/data.js are generated from this file. Only the Lead edits it.",
+  "phases": [
+    {
+      "id": "0-foundation",
+      "title": "Phase 0 — Foundation",
+      "desc": "The coordination system: manual, roles, templates, task board, dashboard, brand & architecture grounding."
+    },
+    {
+      "id": "1-direction",
+      "title": "Phase 1 — Direction",
+      "desc": "Advisors answer the big strategic questions in their lanes; Lead synthesizes into locked decisions (ADRs)."
+    },
+    {
+      "id": "2-design",
+      "title": "Phase 2 — Design",
+      "desc": "Wireframes, design tokens, globe proof-of-concept."
+    },
+    {
+      "id": "3-build",
+      "title": "Phase 3 — Build",
+      "desc": "Astro shell + globe island + Atlas API on Cloudflare."
+    },
+    {
+      "id": "4-migrate",
+      "title": "Phase 4 — Migrate",
+      "desc": "Cut over from v1 when at parity."
+    }
+  ],
+  "owners": {
+    "lead": {
+      "name": "Claude Code",
+      "seat": "Lead Dev & Integrator",
+      "color": "#a3e635"
+    },
+    "chatgpt": {
+      "name": "ChatGPT",
+      "seat": "Product & UX Strategy",
+      "color": "#2bd4d4"
+    },
+    "gemini": {
+      "name": "Gemini",
+      "seat": "Research & Modeling",
+      "color": "#b14aef"
+    },
+    "grok": {
+      "name": "Grok",
+      "seat": "Growth & Markets",
+      "color": "#ff9f2e"
+    }
+  },
+  "statuses": [
+    "backlog",
+    "ready",
+    "assigned",
+    "in_review",
+    "changes_requested",
+    "done",
+    "blocked"
+  ],
+  "tasks": [
+    {
+      "id": "ORCH-001",
+      "title": "Repo structure + AGENTS.md operating manual",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "0-foundation",
+      "depends_on": [],
+      "inputs": [],
+      "scope_in": "Create the full repo directory tree and AGENTS.md (roles, the two laws, the task lifecycle, where everything lives).",
+      "scope_out": "Advisor content; the website build.",
+      "definition_of_done": [
+        "Directory tree exists",
+        "AGENTS.md complete and internally consistent",
+        "Links resolve"
+      ],
+      "deliverable_path": "AGENTS.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-002",
+      "title": "Task system (tasks.json + TASKS.md generator)",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-001"
+      ],
+      "inputs": [],
+      "scope_in": "Define tasks.json schema and seed all Phase 0/1 tasks; generate human-readable TASKS.md and dashboard data from it.",
+      "scope_out": "Advisor work itself.",
+      "definition_of_done": [
+        "tasks.json validates",
+        "All seed tasks fully scoped",
+        "TASKS.md generated from it"
+      ],
+      "deliverable_path": "tasks/tasks.json",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-003",
+      "title": "Live progress dashboard",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-002"
+      ],
+      "inputs": [],
+      "scope_in": "Self-contained dashboard/index.html (brand-styled): overall %, per-phase and per-advisor swimlanes, status pills, live GitHub status strip, auto-refresh.",
+      "scope_out": "Backend services.",
+      "definition_of_done": [
+        "Renders all tasks from data.js",
+        "Overall + per-advisor progress correct",
+        "Works opened locally",
+        "GitHub status strip wired"
+      ],
+      "deliverable_path": "dashboard/index.html",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-004",
+      "title": "MISSION.md grounding pack",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "0-foundation",
+      "depends_on": [],
+      "inputs": [
+        "https://theorchard.network/",
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/VISION.md"
+      ],
+      "scope_in": "One-page ground truth every advisor reads first: what The Orchard is, what v2 is, constraints, lexicon, brand essence, grounding URLs.",
+      "scope_out": "Detailed brand spec (separate task).",
+      "definition_of_done": [
+        "Accurate to VISION.md and live site",
+        "Lexicon table present",
+        "Constraints + cold-start stated"
+      ],
+      "deliverable_path": "MISSION.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-005",
+      "title": "Brand & voice reference",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://theorchard.network/"
+      ],
+      "scope_in": "Port v1 design tokens (colors, gradient, radii, type) and codify the voice (anti-hype) + visual language into docs/brand/.",
+      "scope_out": "New visual design / mockups (Phase 2).",
+      "definition_of_done": [
+        "All v1 tokens captured",
+        "Voice guide with do/don't",
+        "Usable by advisors and the build"
+      ],
+      "deliverable_path": "docs/brand/brand-and-voice.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-006",
+      "title": "Advisor guides + templates",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-001"
+      ],
+      "inputs": [],
+      "scope_in": "End-to-end guide per advisor (Grok/Gemini/ChatGPT) + the Lead role; Task Brief, Deliverable, and ADR templates.",
+      "scope_out": "Assigning actual tasks (that's the seed backlog).",
+      "definition_of_done": [
+        "Three advisor guides + lead role",
+        "Three templates",
+        "Lanes match AGENTS.md"
+      ],
+      "deliverable_path": "governance/roles/",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-007",
+      "title": "Globe/Atlas architecture brief (ADR)",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/datalayer/SPEC.md",
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/decisions/0003-datalayer-verifiable-dataset.md"
+      ],
+      "scope_in": "Document the staged globe architecture: rendering (deck.gl+MapLibre, three.js deep), LOD across 4 zoom levels, Cloudflare data tiling, performance budget summary, cold-start, privacy, staged build path.",
+      "scope_out": "Writing the actual globe code (Phase 2/3).",
+      "definition_of_done": [
+        "Covers rendering, data, perf, cold-start, privacy, migration",
+        "Maps to existing SPEC/ADR-0003",
+        "De-risking order stated"
+      ],
+      "deliverable_path": "docs/architecture/0001-atlas-globe.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-008",
+      "title": "Decision log seeded (ADR 0001, 0002)",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "0-foundation",
+      "depends_on": [
+        "ORCH-006"
+      ],
+      "inputs": [],
+      "scope_in": "Record the coordination model (ADR-0001, Accepted) and the tech-stack working assumption (ADR-0002, Proposed).",
+      "scope_out": "Decisions not yet made.",
+      "definition_of_done": [
+        "ADR-0001 Accepted",
+        "ADR-0002 Proposed with options table",
+        "Both follow the template"
+      ],
+      "deliverable_path": "governance/decisions/",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-010",
+      "title": "'The Orchard in 2036' positioning + category",
+      "owner": "chatgpt",
+      "status": "ready",
+      "priority": "P0",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md",
+        "https://theorchard.network/"
+      ],
+      "scope_in": "One-sentence positioning for 2036 + the category we own; 2-3 alternates with trade-offs; lead with a recommendation.",
+      "scope_out": "Visual design; marketing taglines (Grok); market data (Gemini).",
+      "definition_of_done": [
+        "One recommended sentence + rationale",
+        "2-3 alternates",
+        "Names the category",
+        "Consistent with anti-hype ethos"
+      ],
+      "deliverable_path": "docs/product/positioning-2036.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-011",
+      "title": "Persona ranking + the single 60-second action",
+      "owner": "chatgpt",
+      "status": "ready",
+      "priority": "P0",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "Rank the audiences (now vs. later); pick the primary persona; define the single most important action a first-time visitor should take in 60 seconds and why.",
+      "scope_out": "Full IA (separate task); growth channels (Grok).",
+      "definition_of_done": [
+        "Ranked personas with reasoning",
+        "One primary persona",
+        "One primary action, justified",
+        "Addresses both crypto-native-now and enterprise-later"
+      ],
+      "deliverable_path": "docs/product/personas-and-primary-action.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-012",
+      "title": "Information architecture / sitemap + progressive disclosure",
+      "owner": "chatgpt",
+      "status": "ready",
+      "priority": "P1",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-010",
+        "ORCH-011"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md",
+        "https://theorchard.network/"
+      ],
+      "scope_in": "Sitemap + navigation for v2; how the cinematic globe coexists with a fast functional site; how a buyer, an operator, and a researcher each get where they need; progressive disclosure rules.",
+      "scope_out": "Visual/layout design; copy.",
+      "definition_of_done": [
+        "Sitemap with routes/sections",
+        "Globe-vs-site relationship defined",
+        "Paths for 3 key personas",
+        "Respects performance/SEO constraints"
+      ],
+      "deliverable_path": "docs/product/information-architecture.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-013",
+      "title": "Fruit -> data-class legend",
+      "owner": "chatgpt",
+      "status": "ready",
+      "priority": "P1",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md",
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/VISION.md"
+      ],
+      "scope_in": "The legend mapping fruit types to sensor/data classes; how size/color/freshness encode real metrics; rules that keep it legible (not cluttered) and scalable from 3 to 100k Trees.",
+      "scope_out": "3D rendering implementation (Lead); exact color hex (defer to brand).",
+      "definition_of_done": [
+        "Fruit->data-class table",
+        "Encoding rules for size/color/freshness",
+        "Legibility + scale rules",
+        "Maps only to plausible sensor types, assumptions flagged"
+      ],
+      "deliverable_path": "docs/product/fruit-data-legend.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-014",
+      "title": "Node-state & gamification model",
+      "owner": "chatgpt",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-013"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "What a Tree looks/does across states (healthy, idle, offline, failed, withered, new growth); honest gamification that motivates uptime without hype or fake density.",
+      "scope_out": "Reward math (Gemini/ChatGPT-design separate); rendering (Lead).",
+      "definition_of_done": [
+        "State -> visual mapping",
+        "Ties to real signals (uptime/heartbeat)",
+        "No mechanics that misrepresent the network",
+        "Reduced-motion friendly"
+      ],
+      "deliverable_path": "docs/product/node-states-gamification.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-020",
+      "title": "DePIN competitor teardown",
+      "owner": "gemini",
+      "status": "ready",
+      "priority": "P1",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md",
+        "https://hivemapper.com",
+        "https://geodnet.com",
+        "https://weatherxm.com",
+        "https://www.helium.com",
+        "https://rendernetwork.com",
+        "https://dimo.org"
+      ],
+      "scope_in": "Sourced teardown of 6 DePIN projects (model, traction, tokenomics, data products); one thing to borrow + one to avoid per project; a comparison table.",
+      "scope_out": "Our own positioning/copy (Grok); our financial model (separate task).",
+      "definition_of_done": [
+        "All 6 covered",
+        "Every traction figure cited",
+        "Borrow + avoid per project",
+        "Comparison table",
+        "Assumptions/uncertainty flagged"
+      ],
+      "deliverable_path": "docs/research/competitors.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-021",
+      "title": "Data-buyer & use-case research",
+      "owner": "gemini",
+      "status": "ready",
+      "priority": "P1",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "Who buys environmental sensor data, for what, at what rough price, via what channels; rank use cases (academic, municipal, insurance, agtech, climate) by fit for The Orchard.",
+      "scope_out": "Sales copy; IA.",
+      "definition_of_done": [
+        "Buyer segments with sources",
+        "Use cases ranked by fit + reasoning",
+        "Price/channel notes where sourced",
+        "Gaps labeled, not invented"
+      ],
+      "deliverable_path": "docs/research/data-buyers-and-use-cases.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-022",
+      "title": "Financial model v0",
+      "owner": "gemini",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-020",
+        "ORCH-021"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "A v0 model of revenue streams across 1/3/10-year horizons (hardware, data/API, community, services, licensing, sponsorship), rough cost structure, and marketing spend; all assumptions explicit.",
+      "scope_out": "Tokenomics math/issuance design; legal/tax advice.",
+      "definition_of_done": [
+        "Streams across 3 horizons",
+        "Cost + marketing lines",
+        "Every assumption stated + method shown",
+        "Clearly labeled v0/estimate"
+      ],
+      "deliverable_path": "docs/research/financial-model-v0.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-023",
+      "title": "Nonprofit / compliance research",
+      "owner": "gemini",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "Research how a 501(c)(3) interacts with token/NFT/crypto activity: UBIT, charitable solicitation, data-as-public-good vs. commercial use; summarize considerations and where a professional is required.",
+      "scope_out": "Giving legal advice; choosing a structure (that's Richard's call with counsel).",
+      "definition_of_done": [
+        "Key considerations with sources",
+        "Explicit 'consult a professional' flags",
+        "No claim presented as legal advice"
+      ],
+      "deliverable_path": "docs/research/nonprofit-compliance.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-030",
+      "title": "Positioning & messaging pillars",
+      "owner": "grok",
+      "status": "ready",
+      "priority": "P1",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md",
+        "https://theorchard.network/"
+      ],
+      "scope_in": "3-4 messaging pillars; a headline/subhead system; tagline options building on GROW · CONNECT · EARN; how we sound against other DePIN projects — all anti-hype.",
+      "scope_out": "IA/UX (ChatGPT); the 2036 category sentence (ChatGPT); hard market data (Gemini).",
+      "definition_of_done": [
+        "3-4 pillars",
+        "Headline system + tagline options",
+        "Honest/anti-hype voice",
+        "Differentiation noted with sources"
+      ],
+      "deliverable_path": "docs/growth/positioning-and-messaging.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-031",
+      "title": "Community & growth plan",
+      "owner": "grok",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-030"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "Channel strategy (X, Discord, Reddit, Chia + maker communities), content cadence, referral/quest/ambassador mechanics, and 2-3 launch hooks for the v2 globe.",
+      "scope_out": "Paid budget modeling (Gemini); product features (ChatGPT).",
+      "definition_of_done": [
+        "Channels with rationale",
+        "Cadence + mechanics",
+        "2-3 concrete launch hooks",
+        "Realistic for a solo founder + small community"
+      ],
+      "deliverable_path": "docs/growth/community-and-growth-plan.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-032",
+      "title": "Real-time DePIN market pulse",
+      "owner": "grok",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-004"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"
+      ],
+      "scope_in": "What narratives/launch tactics are landing in DePIN right now and what we should borrow or avoid; cite the actual posts/threads/articles.",
+      "scope_out": "Rigorous competitor teardown with traction numbers (Gemini owns that).",
+      "definition_of_done": [
+        "Current tactics with linked sources",
+        "Borrow/avoid for The Orchard",
+        "Dated (pulse is time-sensitive)",
+        "No fabricated metrics"
+      ],
+      "deliverable_path": "docs/growth/depin-market-pulse.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-040",
+      "title": "Globe proof-of-concept (3 real Trees)",
+      "owner": "lead",
+      "status": "backlog",
+      "priority": "P1",
+      "phase": "2-design",
+      "depends_on": [
+        "ORCH-007"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/0001-atlas-globe.md"
+      ],
+      "scope_in": "A throwaway dark-globe prototype with the 3 real Trees, auto-rotation, one pulse arc, brand tokens, and a 2D/reduced-motion fallback — to validate look and performance budget. GATED on Richard's go.",
+      "scope_out": "Production code; backend.",
+      "definition_of_done": [
+        "Dark globe renders 3 real Trees",
+        "Within initial bundle budget",
+        "Reduced-motion fallback",
+        "Runs on mid-range mobile"
+      ],
+      "deliverable_path": "prototypes/globe-poc/",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-041",
+      "title": "Performance budget + device targets",
+      "owner": "lead",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-007"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/0001-atlas-globe.md"
+      ],
+      "scope_in": "Concrete budgets: landing-shell JS, lazy globe bundle, FPS floors, memory, device/browser targets, and the techniques to hold them.",
+      "scope_out": "Implementation.",
+      "definition_of_done": [
+        "Numeric budgets per surface",
+        "Device/browser matrix",
+        "Techniques listed",
+        "Fallback thresholds defined"
+      ],
+      "deliverable_path": "docs/architecture/performance-budget.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-042",
+      "title": "Atlas data & privacy contract mapping",
+      "owner": "lead",
+      "status": "ready",
+      "priority": "P2",
+      "phase": "1-direction",
+      "depends_on": [
+        "ORCH-007"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/datalayer/SPEC.md",
+        "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/decisions/0003-datalayer-verifiable-dataset.md"
+      ],
+      "scope_in": "Map the public Atlas endpoints (tiles/nodes/node) to the frozen SPEC fields and the geohash privacy model; define what is public vs. owner-only.",
+      "scope_out": "Building the endpoints (Phase 3).",
+      "definition_of_done": [
+        "Endpoint -> SPEC field map",
+        "Public vs owner-only delineated",
+        "Honors GPS-scrubbing precedent",
+        "No precise GPS in any public path"
+      ],
+      "deliverable_path": "docs/architecture/atlas-data-privacy-contract.md",
+      "created": "2026-06-17",
+      "updated": "2026-06-17"
+    }
+  ]
+};
+window.TASKS_GENERATED = "2026-06-17";

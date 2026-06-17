@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Orchard v2 — Mission Control</title>
+<meta name="color-scheme" content="dark" />
+<style>
+  :root{
+    --bg:#070b09; --bg2:#0a1410; --panel:rgba(13,26,20,.58); --panel2:rgba(255,255,255,.03);
+    --border:rgba(120,230,200,.16); --border2:rgba(120,230,200,.34);
+    --text:#ecfbf3; --muted:#a3bcb0; --muted2:#76907f;
+    --green:#4ade80; --green-bright:#a3e635; --cyan:#2bd4d4; --purple:#b14aef; --orange:#ff9f2e;
+    --holo:linear-gradient(100deg,#b14aef 0%,#4f7bff 26%,#28d0d0 50%,#46e08a 72%,#f4d23c 100%);
+    --r:16px; --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1100px 720px at 82% -10%,rgba(177,74,239,.14),transparent 60%),
+      radial-gradient(900px 640px at 4% -2%,rgba(43,212,212,.11),transparent 58%),
+      radial-gradient(1100px 900px at 50% 122%,rgba(255,159,46,.10),transparent 60%),
+      linear-gradient(180deg,var(--bg) 0%,var(--bg2) 55%,#08090c 100%);
+    background-attachment:fixed;color:var(--text);font-family:var(--font);line-height:1.55;
+    -webkit-font-smoothing:antialiased;padding:30px 16px 70px;}
+  .wrap{max-width:1080px;margin:0 auto}
+  .holo{background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:0 0 3px}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+  .sub code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--cyan)}
+  a{color:var(--green);text-decoration:none}a:hover{color:var(--green-bright)}
+
+  .live{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+  .chip{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;backdrop-filter:blur(6px)}
+  .chip .l{font-size:11.5px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.06em}
+  .chip .v{font-size:18px;font-weight:700}
+  .chip .v small{font-size:12px;color:var(--muted);font-weight:400}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);display:inline-block}
+  .dot.ok{background:var(--green-bright);box-shadow:0 0 9px var(--green)}
+  .dot.warn{background:var(--orange);box-shadow:0 0 9px var(--orange)}
+  .dot.bad{background:#e2554f}
+
+  .ov{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:18px;position:relative;overflow:hidden}
+  .ov::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--holo)}
+  .ov-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11px}
+  .ov-top .pct{font-size:30px;font-weight:800}
+  .ov-top .cnt{color:var(--muted);font-size:13px}
+  .bar{height:10px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--holo);background-size:200% auto;border-radius:6px;width:0;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:26px 2px 12px;font-weight:700}
+
+  .lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .lane{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:15px 16px;cursor:pointer;transition:border-color .2s,transform .15s}
+  .lane:hover{border-color:var(--border2);transform:translateY(-2px)}
+  .lane.active{border-color:var(--accent,var(--green));box-shadow:0 0 0 1px var(--accent,var(--green)) inset}
+  .lane .who{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .lane .who b{font-size:15px}
+  .lane .seat{font-size:11.5px;color:var(--muted);margin-bottom:11px}
+  .lane .lpct{font-size:22px;font-weight:800;float:right}
+  .lane .minibar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:9px}
+  .lane .minibar>i{display:block;height:100%;border-radius:4px;width:0;transition:width .6s}
+  .lane .br{font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:3px 9px}
+  .seatdot{width:9px;height:9px;border-radius:50%;flex:none}
+
+  .toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 4px}
+  .tb{font:inherit;font-size:12.5px;padding:6px 12px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer}
+  .tb:hover{background:var(--panel2)} .tb.on{background:var(--holo);color:#0a0a0a;border-color:transparent;font-weight:700}
+
+  .phase{margin-top:18px}
+  .phase-head{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
+  .phase-head h3{font-size:15px;font-weight:700;margin:0}
+  .phase-head .pp{font-size:12px;color:var(--muted);white-space:nowrap}
+  .mini2{width:90px;height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:6px}
+  .mini2>i{display:block;height:100%;background:var(--green);width:0;transition:width .6s}
+  .phase-desc{color:var(--muted2);font-size:12px;margin:0 2px 10px}
+
+  .rows{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .row{display:flex;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid rgba(255,255,255,.05)}
+  .row:first-child{border-top:none}
+  .row:hover{background:var(--panel2)}
+  .row .id{font-family:var(--mono);font-size:12px;color:var(--muted);flex:0 0 76px}
+  .row .ti{flex:1 1 auto;min-width:0;font-size:14px}
+  .row .ti .dp{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .own{flex:0 0 auto;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .pill{flex:0 0 auto;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .pri{flex:0 0 auto;font-size:10.5px;color:var(--muted2);font-family:var(--mono)}
+  .s-done{background:rgba(74,222,128,.16);color:var(--green)}
+  .s-in_review{background:rgba(43,212,212,.16);color:var(--cyan)}
+  .s-changes_requested{background:rgba(255,159,46,.16);color:var(--orange)}
+  .s-assigned{background:rgba(163,230,53,.16);color:var(--green-bright)}
+  .s-ready{background:rgba(120,160,240,.16);color:#9fb6f0}
+  .s-backlog{background:rgba(255,255,255,.06);color:var(--muted)}
+  .s-blocked{background:rgba(226,85,79,.18);color:#e2807a}
+  .hidden{display:none}
+  .foot{text-align:center;color:var(--muted2);font-size:12px;margin-top:30px}
+  .foot a{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The Orchard <span class="holo">v2</span> — Mission Control</h1>
+  <div class="sub">Live council progress · <code id="repo">FlipThisCrypto/The-Orchard-Website-v2</code> · <span id="freshness">—</span></div>
+
+  <div class="live">
+    <div class="chip"><div class="l"><span class="dot" id="ci-dot"></span> Last commit</div><div class="v" id="ci-v">—</div></div>
+    <div class="chip"><div class="l"><span class="dot"></span> Open PRs</div><div class="v" id="pr-v">—</div></div>
+    <div class="chip"><div class="l"><span class="dot"></span> Latest tag</div><div class="v" id="rel-v">—</div></div>
+    <div class="chip"><div class="l"><span class="dot ok"></span> Tasks done</div><div class="v" id="done-v">—</div></div>
+  </div>
+
+  <div class="ov">
+    <div class="ov-top"><div class="pct" id="pct">0%</div><div class="cnt" id="cnt"></div></div>
+    <div class="bar"><i id="barfill"></i></div>
+  </div>
+
+  <h2 class="sec">Council swimlanes</h2>
+  <div class="lanes" id="lanes"></div>
+
+  <h2 class="sec">Tasks by phase</h2>
+  <div class="toolbar" id="filters"></div>
+  <div id="phases"></div>
+
+  <div class="foot">
+    Source of truth: <a href="../tasks/tasks.json" target="_blank" rel="noopener">tasks/tasks.json</a> ·
+    <a href="../tasks/TASKS.md" target="_blank" rel="noopener">TASKS.md</a> ·
+    <a href="../AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
+    generated <span id="gen">—</span>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const REPO = "FlipThisCrypto/The-Orchard-Website-v2";
+  let DATA = window.TASKS || {tasks:[],phases:[],owners:{}};
+  let filter = "all";
+  const $ = (id) => document.getElementById(id);
+  const isDone = (t) => t.status === "done";
+  const pct = (a) => (a.length ? Math.round((100*a.filter(isDone).length)/a.length) : 0);
+  const ago = (d) => { const s=(Date.now()-new Date(d))/1000; const u=[[31536e3,"y"],[2592e3,"mo"],[86400,"d"],[3600,"h"],[60,"m"]]; for(const[n,l]of u){if(s>=n)return Math.floor(s/n)+l+" ago";} return "just now"; };
+
+  function render(){
+    const tasks = DATA.tasks||[];
+    $("repo").textContent = DATA.repo || REPO;
+    $("gen").textContent = window.TASKS_GENERATED || DATA.updated || "—";
+    // overall
+    const o = pct(tasks); $("pct").textContent = o+"%"; $("barfill").style.width=o+"%";
+    $("cnt").textContent = tasks.filter(isDone).length+" / "+tasks.length+" tasks done";
+    $("done-v").innerHTML = tasks.filter(isDone).length+" <small>/ "+tasks.length+"</small>";
+
+    // swimlanes
+    const lanes = $("lanes"); lanes.innerHTML="";
+    for(const [key,ow] of Object.entries(DATA.owners||{})){
+      const own = tasks.filter(t=>t.owner===key); const p=pct(own);
+      const byStatus={}; own.forEach(t=>byStatus[t.status]=(byStatus[t.status]||0)+1);
+      const br = Object.entries(byStatus).map(([s,n])=>`<span>${n} ${s.replace(/_/g,' ')}</span>`).join("");
+      const el=document.createElement("div"); el.className="lane"+(filter===key?" active":"");
+      el.style.setProperty("--accent",ow.color);
+      el.innerHTML=`<div class="lpct" style="color:${ow.color}">${p}%</div>
+        <div class="who"><span class="seatdot" style="background:${ow.color}"></span><b>${ow.name}</b></div>
+        <div class="seat">${ow.seat}</div>
+        <div class="minibar"><i style="width:${p}%;background:${ow.color}"></i></div>
+        <div class="br">${br||"<span>no tasks</span>"}</div>`;
+      el.onclick=()=>{filter=(filter===key?"all":key);draw();};
+      lanes.appendChild(el);
+    }
+    drawFilters(); drawPhases();
+  }
+
+  function drawFilters(){
+    const f=$("filters"); f.innerHTML="";
+    const opts=[["all","All"]].concat(Object.entries(DATA.owners||{}).map(([k,o])=>[k,o.name]));
+    for(const [k,label] of opts){
+      const b=document.createElement("button"); b.className="tb"+(filter===k?" on":""); b.textContent=label;
+      b.onclick=()=>{filter=k;draw();}; f.appendChild(b);
+    }
+  }
+
+  function drawPhases(){
+    const tasks=DATA.tasks||[]; const host=$("phases"); host.innerHTML="";
+    for(const ph of (DATA.phases||[])){
+      const all=tasks.filter(t=>t.phase===ph.id);
+      if(!all.length) continue;
+      const shown=all.filter(t=>filter==="all"||t.owner===filter);
+      const p=pct(all);
+      const sec=document.createElement("div"); sec.className="phase";
+      sec.innerHTML=`<div class="phase-head"><h3>${ph.title}</h3><span class="pp">${p}% · ${all.filter(isDone).length}/${all.length}<span class="mini2"><i style="width:${p}%"></i></span></span></div>
+        <p class="phase-desc">${ph.desc||""}</p>`;
+      const rows=document.createElement("div"); rows.className="rows";
+      if(!shown.length){ rows.innerHTML=`<div class="row"><div class="ti" style="color:var(--muted2)">No tasks for this filter.</div></div>`; }
+      for(const t of shown){
+        const ow=(DATA.owners||{})[t.owner]||{name:t.owner,color:"#888"};
+        const r=document.createElement("div"); r.className="row";
+        r.innerHTML=`<div class="id">${t.id}</div>
+          <div class="ti">${t.title}<div class="dp">${t.deliverable_path||""}</div></div>
+          <div class="own"><span class="seatdot" style="background:${ow.color}"></span>${ow.name}</div>
+          <div class="pri">${t.priority||""}</div>
+          <div class="pill s-${t.status}">${t.status.replace(/_/g,' ')}</div>`;
+        rows.appendChild(r);
+      }
+      sec.appendChild(rows); host.appendChild(sec);
+    }
+  }
+  function draw(){ render(); }
+
+  // ---- live GitHub status (works even from file://; CORS-enabled API) ----
+  async function gh(path){ const r=await fetch("https://api.github.com/repos/"+REPO+path,{headers:{Accept:"application/vnd.github+json"}}); if(!r.ok) throw new Error(r.status); return r; }
+  async function ghStatus(){
+    try{ const r=await gh("/commits?per_page=1"); const j=await r.json();
+      if(j.length){ $("ci-v").innerHTML=ago(j[0].commit.author.date); $("ci-dot").className="dot ok"; }
+      else { $("ci-v").textContent="no commits"; }
+    }catch(e){ $("ci-v").innerHTML='<small>not pushed yet</small>'; $("ci-dot").className="dot warn"; }
+    try{ const r=await gh("/pulls?state=open&per_page=100"); const j=await r.json(); $("pr-v").textContent=Array.isArray(j)?j.length:"—"; }catch(e){ $("pr-v").innerHTML='<small>—</small>'; }
+    try{ const r=await gh("/tags?per_page=1"); const j=await r.json(); $("rel-v").textContent=(j&&j.length)?j[0].name:"none"; }catch(e){ $("rel-v").innerHTML='<small>—</small>'; }
+    $("freshness").textContent="status checked "+new Date().toLocaleTimeString();
+  }
+
+  // ---- live task refresh: try tasks.json (served over http/Pages), else embedded data.js ----
+  async function refresh(){
+    try{ const r=await fetch("../tasks/tasks.json?_="+Date.now(),{cache:"no-store"}); if(r.ok){ DATA=await r.json(); } }catch(e){}
+    draw();
+  }
+
+  draw();                 // immediate paint from embedded data.js
+  refresh();              // upgrade to live tasks.json if reachable
+  ghStatus();             // live repo status
+  setInterval(refresh, 30000);
+  setInterval(ghStatus, 60000);
+</script>
+</body>
+</html>
