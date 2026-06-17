@@ -148,7 +148,9 @@
         .ringColor(t=>t.primary).ringMaxRadius(4.5).ringPropagationSpeed(1.8).ringRepeatPeriod(1500);
     }
     const ctrl = world.controls();
-    ctrl.autoRotate = !reduce; ctrl.autoRotateSpeed = 0.55; ctrl.enableDamping = true;
+    ctrl.autoRotate = false;     // no auto-spin — drag to rotate (per feedback)
+    ctrl.enableDamping = true;   // smooth momentum when YOU spin it
+    ctrl.enableZoom = true;
     world.pointOfView({ lat:28, lng:-85, altitude:2.3 }, 0);
 
     addEventListener("resize", ()=> world.width(innerWidth).height(innerHeight));

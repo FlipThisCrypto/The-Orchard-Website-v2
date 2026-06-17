@@ -9,8 +9,8 @@ before wiring the real data layer.
   file — it's fully **self-contained and offline** (library + texture are vendored in `vendor/`).
 
 ## What it demonstrates
-- Dark, branded globe (Orchard tokens), atmosphere glow, slow auto-rotation, a gentle "first light"
-  zoom toward the orchard on load.
+- Dark, branded globe (Orchard tokens), atmosphere glow, a gentle "first light" zoom toward the
+  orchard on load. **Drag to rotate (no auto-spin)** — with smooth momentum.
 - The **3 current Trees** as colored points with **pulsing rings** (the cold-start "alive" signal —
   identical mechanism at 3 Trees or 100k).
 - **Hover** a Tree for a quick label; **click** a Tree for an Explorer-style panel (ID, coarse
