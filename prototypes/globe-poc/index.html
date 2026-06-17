@@ -41,6 +41,7 @@
   .legend h3{margin:0 0 9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .legend .row{display:flex;align-items:center;gap:9px;font-size:13px;margin:5px 0}
   .legend .row small{color:var(--muted2);margin-left:auto;font-family:var(--mono);font-size:11px}
+  .legend .sw{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 7px rgba(255,255,255,.15)}
   .foot{pointer-events:auto;align-self:flex-start;color:var(--muted2);font-size:11.5px;margin-top:10px}
   .foot code{color:var(--cyan);background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
 
@@ -59,7 +60,8 @@
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700}
   .st i{width:8px;height:8px;border-radius:50%}
   .fruits{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap}
-  .fruit{font-size:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:4px 10px}
+  .fruit{font-size:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px}
+  .fruit .fsw{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .proof{margin-top:13px;font-size:11.5px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:11px}
   .verify{color:var(--green-bright)}
 
@@ -83,11 +85,11 @@
     <div>
       <div class="legend">
         <h3>Fruit = data class</h3>
-        <div class="row"><span>🍊</span> Temperature <small>orange</small></div>
-        <div class="row"><span>🍋</span> Air quality <small>lemon</small></div>
-        <div class="row"><span>🫐</span> Humidity <small>blueberry</small></div>
-        <div class="row"><span>🍐</span> Pressure <small>pear</small></div>
-        <div class="row"><span>🍇</span> Multi-sensor <small>grapes</small></div>
+        <div class="row"><i class="sw" style="background:#ff9f2e"></i> 🍊 Temperature <small>orange</small></div>
+        <div class="row"><i class="sw" style="background:#f4d23c"></i> 🍋 Air quality <small>lemon</small></div>
+        <div class="row"><i class="sw" style="background:#4f7bff"></i> 🫐 Humidity <small>blueberry</small></div>
+        <div class="row"><i class="sw" style="background:#a3e635"></i> 🍐 Pressure <small>pear</small></div>
+        <div class="row"><i class="sw" style="background:#b14aef"></i> 🍇 Multi-sensor <small>grapes</small></div>
       </div>
       <div class="foot">Representative coarse positions · production reads live <code>node:.geohash</code> (~5 km). Spine for production: deck.gl + MapLibre.</div>
     </div>
@@ -123,6 +125,7 @@
     { id:"ORCH-0003", region:"Central Kentucky, USA",       lat:37.99, lng:-84.20, state:"recovering", uptimeSeasons:2,  primary:"#a3e635", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Pressure",emoji:"🍐"}] }
   ];
   const STATE_COLOR = { healthy:"#4ade80", recovering:"#a3e635", idle:"#2bd4d4", offline:"#76907f", failed:"#e2554f" };
+  const FRUIT_COLOR = { "Temperature":"#ff9f2e", "Air quality":"#f4d23c", "Humidity":"#4f7bff", "Pressure":"#a3e635", "Multi-sensor":"#b14aef", "Soil":"#4ade80" };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
@@ -166,7 +169,7 @@
     document.getElementById("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${t.state}`;
     document.getElementById("p-uptime").textContent = t.uptimeSeasons + " Seasons";
     document.getElementById("p-sensors").textContent = t.fruits.length;
-    document.getElementById("p-fruits").innerHTML = t.fruits.map(f=>`<span class="fruit">${f.emoji} ${f.type}</span>`).join("");
+    document.getElementById("p-fruits").innerHTML = t.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${FRUIT_COLOR[f.type]||'#9fb6f0'}"></i>${f.emoji} ${f.type}</span>`).join("");
     document.getElementById("panel").classList.add("show");
   }
   document.getElementById("px").onclick = ()=> document.getElementById("panel").classList.remove("show");
