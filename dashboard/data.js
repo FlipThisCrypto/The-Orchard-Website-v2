@@ -560,7 +560,7 @@ window.TASKS = {
       "id": "ORCH-040",
       "title": "Globe proof-of-concept (3 real Trees)",
       "owner": "lead",
-      "status": "backlog",
+      "status": "done",
       "priority": "P1",
       "phase": "2-design",
       "depends_on": [
@@ -585,7 +585,7 @@ window.TASKS = {
       "id": "ORCH-041",
       "title": "Performance budget + device targets",
       "owner": "lead",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [
@@ -610,7 +610,7 @@ window.TASKS = {
       "id": "ORCH-042",
       "title": "Atlas data & privacy contract mapping",
       "owner": "lead",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [

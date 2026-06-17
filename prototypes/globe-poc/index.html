@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Orchard — Living Globe (proof-of-concept)</title>
+<meta name="color-scheme" content="dark" />
+<style>
+  :root{
+    --bg:#070b09; --bg2:#0a1410; --text:#ecfbf3; --muted:#a3bcb0; --muted2:#76907f;
+    --border:rgba(120,230,200,.18); --panel:rgba(10,20,16,.72);
+    --green:#4ade80; --green-bright:#a3e635; --cyan:#2bd4d4; --purple:#b14aef; --orange:#ff9f2e;
+    --holo:linear-gradient(100deg,#b14aef 0%,#4f7bff 26%,#28d0d0 50%,#46e08a 72%,#f4d23c 100%);
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(1200px 800px at 70% -10%,rgba(177,74,239,.10),transparent 60%),
+       radial-gradient(900px 700px at 10% 110%,rgba(43,212,212,.10),transparent 60%),
+       linear-gradient(180deg,var(--bg),#05080a);
+       color:var(--text);font-family:var(--font);overflow:hidden}
+  #globe{position:fixed;inset:0}
+  .holo{background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* overlay UI (doesn't block globe drag except on interactive bits) */
+  .overlay{position:fixed;inset:0;pointer-events:none;padding:22px;display:flex;flex-direction:column;justify-content:space-between}
+  .top{max-width:560px}
+  .badge{pointer-events:auto;display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:#0a0a0a;background:var(--holo);padding:4px 10px;border-radius:999px;font-weight:800;margin-bottom:12px}
+  h1{margin:0 0 6px;font-size:clamp(20px,3.4vw,30px);font-weight:800;letter-spacing:-.02em}
+  .sub{margin:0;color:var(--muted);font-size:14px;max-width:480px;line-height:1.5}
+  .pill{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;
+    color:#d9ffe9;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:6px 13px;backdrop-filter:blur(6px)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green-bright);box-shadow:0 0 9px var(--green)}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.5)}70%,100%{box-shadow:0 0 0 9px rgba(163,230,53,0)}}
+  .dot.live{animation:ping 2.4s ease-out infinite}
+
+  .legend{pointer-events:auto;align-self:flex-start;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:13px 15px;backdrop-filter:blur(8px);max-width:230px}
+  .legend h3{margin:0 0 9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .legend .row{display:flex;align-items:center;gap:9px;font-size:13px;margin:5px 0}
+  .legend .row small{color:var(--muted2);margin-left:auto;font-family:var(--mono);font-size:11px}
+  .foot{pointer-events:auto;align-self:flex-start;color:var(--muted2);font-size:11.5px;margin-top:10px}
+  .foot code{color:var(--cyan);background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+
+  /* explorer panel (node click) */
+  .panel{pointer-events:auto;position:fixed;top:22px;right:22px;width:300px;max-width:calc(100vw - 44px);
+    background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;backdrop-filter:blur(10px);
+    box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(360px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s}
+  .panel.show{transform:none;opacity:1}
+  .panel::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:16px 16px 0 0;background:var(--holo)}
+  .panel .x{position:absolute;top:12px;right:13px;cursor:pointer;color:var(--muted);border:none;background:none;font-size:18px;line-height:1}
+  .panel .nid{font-family:var(--mono);font-size:13px;color:var(--cyan)}
+  .panel h2{margin:6px 0 2px;font-size:17px}
+  .panel .reg{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+  .panel .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px}
+  .panel .kv span:first-child{color:var(--muted)}
+  .st{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .st i{width:8px;height:8px;border-radius:50%}
+  .fruits{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap}
+  .fruit{font-size:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:4px 10px}
+  .proof{margin-top:13px;font-size:11.5px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:11px}
+  .verify{color:var(--green-bright)}
+
+  #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  #fallback .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:520px}
+  #fallback ul{text-align:left;color:var(--muted);font-size:14px;line-height:1.7}
+  @media (max-width:640px){ .legend{display:none} .panel{top:auto;bottom:22px;right:22px;left:22px;width:auto;transform:translateY(360px)} .panel.show{transform:none} }
+</style>
+</head>
+<body>
+  <div id="globe"></div>
+
+  <div class="overlay">
+    <div class="top">
+      <span class="badge">Proof of concept</span>
+      <h1>The <span class="holo">Orchard</span> — Living Globe</h1>
+      <p class="sub">A dark Earth where every Tree is a real sensor node bearing fruit. Drag to spin, scroll to zoom, click a Tree to inspect it. <em>This is a throwaway prototype to prove the look &amp; feel.</em></p>
+      <span class="pill"><span class="dot live" id="livedot"></span> <span id="count">3 Trees planted</span> · first light in Mount Washington, KY</span>
+    </div>
+
+    <div>
+      <div class="legend">
+        <h3>Fruit = data class</h3>
+        <div class="row"><span>🍊</span> Temperature <small>orange</small></div>
+        <div class="row"><span>🍋</span> Air quality <small>lemon</small></div>
+        <div class="row"><span>🫐</span> Humidity <small>blueberry</small></div>
+        <div class="row"><span>🍐</span> Pressure <small>pear</small></div>
+        <div class="row"><span>🍇</span> Multi-sensor <small>grapes</small></div>
+      </div>
+      <div class="foot">Representative coarse positions · production reads live <code>node:.geohash</code> (~5 km). Spine for production: deck.gl + MapLibre.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel">
+    <button class="x" id="px" aria-label="Close">✕</button>
+    <div class="nid" id="p-id">ORCH-0000</div>
+    <h2>Tree</h2>
+    <div class="reg" id="p-reg"></div>
+    <div class="kv"><span>State</span><span class="st" id="p-state"></span></div>
+    <div class="kv"><span>Uptime</span><span id="p-uptime"></span></div>
+    <div class="kv"><span>Sensors</span><span id="p-sensors"></span></div>
+    <div class="fruits" id="p-fruits"></div>
+    <div class="proof">🔒 Location shown as a coarse region only.<br><span class="verify">✓ Verified</span> — signed Harvests, Season uptime attested on Chia DataLayer <em>(mocked in PoC)</em>.</div>
+  </div>
+
+  <div id="fallback">
+    <div class="card">
+      <h1>The <span class="holo">Orchard</span> — Living Globe</h1>
+      <p class="sub">Your browser can't render the 3D globe (no WebGL). Here's the current network:</p>
+      <ul id="fb-list"></ul>
+      <p class="foot">The production site will serve a 2D map fallback here automatically.</p>
+    </div>
+  </div>
+
+<script src="vendor/globe.gl.min.js"></script>
+<script>
+  // Representative PoC data (mirrors trees.json). Coarse positions only — NOT precise GPS.
+  const TREES = [
+    { id:"ORCH-0001", region:"Mount Washington, KY, USA", lat:38.05, lng:-85.54, state:"healthy",    uptimeSeasons:14, primary:"#ff9f2e", fruits:[{type:"Air quality",emoji:"🍋"},{type:"Temperature",emoji:"🍊"}] },
+    { id:"ORCH-0002", region:"Louisville, KY, USA",        lat:38.25, lng:-85.76, state:"healthy",    uptimeSeasons:6,  primary:"#2bd4d4", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Humidity",emoji:"🫐"}] },
+    { id:"ORCH-0003", region:"Central Kentucky, USA",       lat:37.99, lng:-84.20, state:"recovering", uptimeSeasons:2,  primary:"#a3e635", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Pressure",emoji:"🍐"}] }
+  ];
+  const STATE_COLOR = { healthy:"#4ade80", recovering:"#a3e635", idle:"#2bd4d4", offline:"#76907f", failed:"#e2554f" };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
+
+  if (!webglOK() || typeof Globe === "undefined") {
+    document.getElementById("globe").style.display="none";
+    document.querySelector(".overlay").style.display="none";
+    const fb=document.getElementById("fallback"); fb.style.display="flex";
+    document.getElementById("fb-list").innerHTML = TREES.map(t=>`<li><b>${t.id}</b> — ${t.region} · ${t.state} · ${t.uptimeSeasons} Seasons · ${t.fruits.map(f=>f.emoji).join(" ")}</li>`).join("");
+  } else {
+    const world = Globe()(document.getElementById("globe"))
+      .globeImageUrl("vendor/earth-night.jpg")
+      .backgroundColor("rgba(0,0,0,0)")
+      .showAtmosphere(true).atmosphereColor("#2bd4d4").atmosphereAltitude(0.2)
+      .pointsData(TREES).pointLat("lat").pointLng("lng").pointColor("primary")
+      .pointAltitude(0.012).pointRadius(0.55).pointResolution(18)
+      .pointLabel(t=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.92);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3">
+          <b>${t.id}</b><br><span style="color:#a3bcb0">${t.region}</span><br>${t.fruits.map(f=>f.emoji+" "+f.type).join(" · ")}</div>`)
+      .onPointClick(showPanel);
+
+    if (!reduce) {
+      world.ringsData(TREES).ringLat("lat").ringLng("lng")
+        .ringColor(t=>t.primary).ringMaxRadius(4.5).ringPropagationSpeed(1.8).ringRepeatPeriod(1500);
+    }
+    const ctrl = world.controls();
+    ctrl.autoRotate = !reduce; ctrl.autoRotateSpeed = 0.55; ctrl.enableDamping = true;
+    world.pointOfView({ lat:28, lng:-85, altitude:2.3 }, 0);
+
+    addEventListener("resize", ()=> world.width(innerWidth).height(innerHeight));
+
+    // gently zoom toward the orchard on load ("first light")
+    if (!reduce) setTimeout(()=> world.pointOfView({ lat:38, lng:-85.4, altitude:1.45 }, 2600), 1200);
+  }
+
+  function showPanel(t){
+    document.getElementById("p-id").textContent = t.id;
+    document.getElementById("p-reg").textContent = "📍 " + t.region;
+    const sc = STATE_COLOR[t.state] || "#76907f";
+    document.getElementById("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${t.state}`;
+    document.getElementById("p-uptime").textContent = t.uptimeSeasons + " Seasons";
+    document.getElementById("p-sensors").textContent = t.fruits.length;
+    document.getElementById("p-fruits").innerHTML = t.fruits.map(f=>`<span class="fruit">${f.emoji} ${f.type}</span>`).join("");
+    document.getElementById("panel").classList.add("show");
+  }
+  document.getElementById("px").onclick = ()=> document.getElementById("panel").classList.remove("show");
+</script>
+</body>
+</html>

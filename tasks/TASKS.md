@@ -3,13 +3,13 @@
 > Auto-generated from `tasks/tasks.json` by `scripts/generate.mjs`. **Do not edit by hand** —
 > edit the JSON and regenerate. Live view: `dashboard/index.html`.
 
-**Overall: 87% complete** — 20/23 tasks · updated 2026-06-17
+**Overall: 100% complete** — 23/23 tasks · updated 2026-06-17
 
 ## By advisor
 
 | Seat | Owner | Done | Total | % |
 |---|---|---|---|---|
-| Lead Dev & Integrator | Claude Code | 8 | 11 | 73% |
+| Lead Dev & Integrator | Claude Code | 11 | 11 | 100% |
 | Product & UX Strategy | ChatGPT | 5 | 5 | 100% |
 | Research & Modeling | Gemini | 4 | 4 | 100% |
 | Growth & Markets | Grok | 3 | 3 | 100% |
@@ -29,7 +29,7 @@ The coordination system: manual, roles, templates, task board, dashboard, brand 
 | ORCH-007 | Globe/Atlas architecture brief (ADR) | Claude Code | ✅ done | P1 | `docs/architecture/0001-atlas-globe.md` |
 | ORCH-008 | Decision log seeded (ADR 0001, 0002) | Claude Code | ✅ done | P1 | `governance/decisions/` |
 
-## Phase 1 — Direction — 86%
+## Phase 1 — Direction — 100%
 
 Advisors answer the big strategic questions in their lanes; Lead synthesizes into locked decisions (ADRs).
 
@@ -47,14 +47,14 @@ Advisors answer the big strategic questions in their lanes; Lead synthesizes int
 | ORCH-030 | Positioning & messaging pillars | Grok | ✅ done | P1 | `docs/growth/positioning-and-messaging.md` |
 | ORCH-031 | Community & growth plan | Grok | ✅ done | P2 | `docs/growth/community-and-growth-plan.md` |
 | ORCH-032 | Real-time DePIN market pulse | Grok | ✅ done | P2 | `docs/growth/depin-market-pulse.md` |
-| ORCH-041 | Performance budget + device targets | Claude Code | ▢ ready | P2 | `docs/architecture/performance-budget.md` |
-| ORCH-042 | Atlas data & privacy contract mapping | Claude Code | ▢ ready | P2 | `docs/architecture/atlas-data-privacy-contract.md` |
+| ORCH-041 | Performance budget + device targets | Claude Code | ✅ done | P2 | `docs/architecture/performance-budget.md` |
+| ORCH-042 | Atlas data & privacy contract mapping | Claude Code | ✅ done | P2 | `docs/architecture/atlas-data-privacy-contract.md` |
 
-## Phase 2 — Design — 0%
+## Phase 2 — Design — 100%
 
 Wireframes, design tokens, globe proof-of-concept.
 
 | ID | Task | Owner | Status | Pri | Deliverable |
 |---|---|---|---|---|---|
-| ORCH-040 | Globe proof-of-concept (3 real Trees) | Claude Code | 💤 backlog | P1 | `prototypes/globe-poc/` |
+| ORCH-040 | Globe proof-of-concept (3 real Trees) | Claude Code | ✅ done | P1 | `prototypes/globe-poc/` |
 

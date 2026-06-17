@@ -204,7 +204,7 @@
 
     {
       "id": "ORCH-040", "title": "Globe proof-of-concept (3 real Trees)", "owner": "lead",
-      "status": "backlog", "priority": "P1", "phase": "2-design", "depends_on": ["ORCH-007"],
+      "status": "done", "priority": "P1", "phase": "2-design", "depends_on": ["ORCH-007"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/0001-atlas-globe.md"],
       "scope_in": "A throwaway dark-globe prototype with the 3 real Trees, auto-rotation, one pulse arc, brand tokens, and a 2D/reduced-motion fallback — to validate look and performance budget. GATED on Richard's go.",
       "scope_out": "Production code; backend.",
@@ -213,7 +213,7 @@
     },
     {
       "id": "ORCH-041", "title": "Performance budget + device targets", "owner": "lead",
-      "status": "ready", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-007"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-007"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/0001-atlas-globe.md"],
       "scope_in": "Concrete budgets: landing-shell JS, lazy globe bundle, FPS floors, memory, device/browser targets, and the techniques to hold them.",
       "scope_out": "Implementation.",
@@ -222,7 +222,7 @@
     },
     {
       "id": "ORCH-042", "title": "Atlas data & privacy contract mapping", "owner": "lead",
-      "status": "ready", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-007"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-007"],
       "inputs": ["https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/datalayer/SPEC.md", "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/decisions/0003-datalayer-verifiable-dataset.md"],
       "scope_in": "Map the public Atlas endpoints (tiles/nodes/node) to the frozen SPEC fields and the geohash privacy model; define what is public vs. owner-only.",
       "scope_out": "Building the endpoints (Phase 3).",
