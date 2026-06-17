@@ -299,7 +299,7 @@ window.TASKS = {
       "id": "ORCH-012",
       "title": "Information architecture / sitemap + progressive disclosure",
       "owner": "chatgpt",
-      "status": "assigned",
+      "status": "done",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -326,7 +326,7 @@ window.TASKS = {
       "id": "ORCH-013",
       "title": "Fruit -> data-class legend",
       "owner": "chatgpt",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -434,7 +434,7 @@ window.TASKS = {
       "id": "ORCH-022",
       "title": "Financial model v0",
       "owner": "gemini",
-      "status": "assigned",
+      "status": "done",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [
@@ -460,7 +460,7 @@ window.TASKS = {
       "id": "ORCH-023",
       "title": "Nonprofit / compliance research",
       "owner": "gemini",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [
@@ -535,7 +535,7 @@ window.TASKS = {
       "id": "ORCH-032",
       "title": "Real-time DePIN market pulse",
       "owner": "grok",
-      "status": "assigned",
+      "status": "done",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [

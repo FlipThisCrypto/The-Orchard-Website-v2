@@ -43,6 +43,17 @@
 | Latency vs. buyer segment (epoch >5min loses real-time algo buyers) | Gemini ORCH-021 | Architectural input; focus analytics/insurance | feeds ORCH-022 + architecture |
 | Reconcile fruit→data mapping (Gemini illustrated) with the canonical legend | Gemini ORCH-021 / ChatGPT ORCH-013 | One source of truth for the legend | feeds ORCH-013 / ChatGPT |
 
+## From Phase 1 — round 3 (triaged 2026-06-17)
+
+| Idea | Source | Why | Phase / owner |
+|---|---|---|---|
+| **Decision: /atlas cold-start — live Trees only vs. labeled demo/empty states** | ChatGPT ORCH-012 | Make 3-Tree start feel intentional without faking density | 2 / Richard+Lead |
+| **Decision: ESG/compliance language lean** (env-data-for-ESG vs. pure "verifiable sensing") | Grok ORCH-032 | Affects positioning emphasis | 2 / Richard |
+| **$JUICE allocation/issuance is UNDECIDED** — model assumed 40M pool / 30% burn | Gemini ORCH-022 | Don't let modeling assumptions calcify into tokenomics | later / Richard+Lead |
+| Design toward a **Y5 pivot to data revenue** (hardware saturates) | Gemini ORCH-022 | Solvency depends on B2B data by ~Y5 | strategy / Lead |
+| $JUICE emissions decay curve over 520 weeks | Gemini ORCH-022 | Ensure reward pool lasts to Y10 | later / Gemini |
+| Reference others' tactics in X threads ("what others are testing") | Grok ORCH-032 | Show awareness without copying | 2 / Grok |
+
 ## How to use this file
 
 - One row per idea: **what** + **why** + a guess at phase/owner.

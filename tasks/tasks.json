@@ -111,7 +111,7 @@
     },
     {
       "id": "ORCH-012", "title": "Information architecture / sitemap + progressive disclosure", "owner": "chatgpt",
-      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-010", "ORCH-011"],
+      "status": "done", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-010", "ORCH-011"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://theorchard.network/"],
       "scope_in": "Sitemap + navigation for v2; how the cinematic globe coexists with a fast functional site; how a buyer, an operator, and a researcher each get where they need; progressive disclosure rules.",
       "scope_out": "Visual/layout design; copy.",
@@ -120,7 +120,7 @@
     },
     {
       "id": "ORCH-013", "title": "Fruit -> data-class legend", "owner": "chatgpt",
-      "status": "ready", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://github.com/FlipThisCrypto/the-orchard/blob/main/docs/VISION.md"],
       "scope_in": "The legend mapping fruit types to sensor/data classes; how size/color/freshness encode real metrics; rules that keep it legible (not cluttered) and scalable from 3 to 100k Trees.",
       "scope_out": "3D rendering implementation (Lead); exact color hex (defer to brand).",
@@ -157,7 +157,7 @@
     },
     {
       "id": "ORCH-022", "title": "Financial model v0", "owner": "gemini",
-      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-020", "ORCH-021"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-020", "ORCH-021"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "A v0 model of revenue streams across 1/3/10-year horizons (hardware, data/API, community, services, licensing, sponsorship), rough cost structure, and marketing spend; all assumptions explicit.",
       "scope_out": "Tokenomics math/issuance design; legal/tax advice.",
@@ -166,7 +166,7 @@
     },
     {
       "id": "ORCH-023", "title": "Nonprofit / compliance research", "owner": "gemini",
-      "status": "ready", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "Research how a 501(c)(3) interacts with token/NFT/crypto activity: UBIT, charitable solicitation, data-as-public-good vs. commercial use; summarize considerations and where a professional is required.",
       "scope_out": "Giving legal advice; choosing a structure (that's Richard's call with counsel).",
@@ -194,7 +194,7 @@
     },
     {
       "id": "ORCH-032", "title": "Real-time DePIN market pulse", "owner": "grok",
-      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "What narratives/launch tactics are landing in DePIN right now and what we should borrow or avoid; cite the actual posts/threads/articles.",
       "scope_out": "Rigorous competitor teardown with traction numbers (Gemini owns that).",
