@@ -120,9 +120,9 @@
 <script>
   // Representative PoC data (mirrors trees.json). Coarse positions only — NOT precise GPS.
   const TREES = [
-    { id:"ORCH-0001", region:"Mount Washington, KY, USA", lat:38.05, lng:-85.54, state:"healthy",    uptimeSeasons:14, primary:"#ff9f2e", fruits:[{type:"Air quality",emoji:"🍋"},{type:"Temperature",emoji:"🍊"}] },
-    { id:"ORCH-0002", region:"Louisville, KY, USA",        lat:38.25, lng:-85.76, state:"healthy",    uptimeSeasons:6,  primary:"#2bd4d4", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Humidity",emoji:"🫐"}] },
-    { id:"ORCH-0003", region:"Central Kentucky, USA",       lat:37.99, lng:-84.20, state:"recovering", uptimeSeasons:2,  primary:"#a3e635", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Pressure",emoji:"🍐"}] }
+    { id:"ORCH-0001", region:"Mount Washington, KY, USA", lat:38.0, lng:-85.5, state:"healthy",    uptimeSeasons:14, primary:"#ff9f2e", fruits:[{type:"Air quality",emoji:"🍋"},{type:"Temperature",emoji:"🍊"}] },
+    { id:"ORCH-0002", region:"Louisville, KY, USA",        lat:38.2, lng:-85.8, state:"healthy",    uptimeSeasons:6,  primary:"#2bd4d4", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Humidity",emoji:"🫐"}] },
+    { id:"ORCH-0003", region:"Central Kentucky, USA",       lat:38.0, lng:-84.2, state:"recovering", uptimeSeasons:2,  primary:"#a3e635", fruits:[{type:"Temperature",emoji:"🍊"},{type:"Pressure",emoji:"🍐"}] }
   ];
   const STATE_COLOR = { healthy:"#4ade80", recovering:"#a3e635", idle:"#2bd4d4", offline:"#76907f", failed:"#e2554f" };
   const FRUIT_COLOR = { "Temperature":"#ff9f2e", "Air quality":"#f4d23c", "Humidity":"#4f7bff", "Pressure":"#a3e635", "Multi-sensor":"#b14aef", "Soil":"#4ade80" };

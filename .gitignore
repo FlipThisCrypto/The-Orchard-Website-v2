@@ -6,10 +6,28 @@ dist/
 .vercel/
 .wrangler/
 
-# env & secrets
+# Secrets, keys & wallets — NEVER commit (a leaked key is catastrophic for a crypto project)
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.keystore
+*.p12
+*.pfx
+*.csr
+id_rsa*
+id_ed25519*
+*.ppk
+*.mnemonic
+*.seed
+mnemonic*.txt
+wallet.json
+wallet-*.json
+keyring*
+credentials*.json
+secrets*.json
+.chia/
 
 # os / editor
 .DS_Store
