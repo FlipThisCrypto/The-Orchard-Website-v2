@@ -81,7 +81,8 @@
   .row:hover{background:var(--panel2)}
   .row .id{font-family:var(--mono);font-size:12px;color:var(--muted);flex:0 0 76px}
   .row .ti{flex:1 1 auto;min-width:0;font-size:14px}
-  .row .ti .dp{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .ti .dp{display:block;font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  a.dp{color:var(--cyan)} a.dp:hover{text-decoration:underline}
   .row .own{flex:0 0 auto;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
   .pill{flex:0 0 auto;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
   .pri{flex:0 0 auto;font-size:10.5px;color:var(--muted2);font-family:var(--mono)}
@@ -125,6 +126,8 @@
     Source of truth: <a href="../tasks/tasks.json" target="_blank" rel="noopener">tasks/tasks.json</a> ·
     <a href="../tasks/TASKS.md" target="_blank" rel="noopener">TASKS.md</a> ·
     <a href="../AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
+    <a href="../docs/" target="_blank" rel="noopener">docs/</a> ·
+    <a href="../governance/decisions/" target="_blank" rel="noopener">decisions/</a> ·
     generated <span id="gen">—</span>
   </div>
 </div>
@@ -132,6 +135,7 @@
 <script src="data.js"></script>
 <script>
   const REPO = "FlipThisCrypto/The-Orchard-Website-v2";
+  const REPO_URL = "https://github.com/"+REPO+"/";
   let DATA = window.TASKS || {tasks:[],phases:[],owners:{}};
   let filter = "all";
   const $ = (id) => document.getElementById(id);
@@ -191,8 +195,11 @@
       for(const t of shown){
         const ow=(DATA.owners||{})[t.owner]||{name:t.owner,color:"#888"};
         const r=document.createElement("div"); r.className="row";
+        const dp=t.deliverable_path?(t.status==='done'
+          ?`<a class="dp" href="${REPO_URL}${t.deliverable_path.endsWith('/')?'tree':'blob'}/main/${encodeURI(t.deliverable_path)}" target="_blank" rel="noopener">${t.deliverable_path} ↗</a>`
+          :`<span class="dp">${t.deliverable_path}</span>`):"";
         r.innerHTML=`<div class="id">${t.id}</div>
-          <div class="ti">${t.title}<div class="dp">${t.deliverable_path||""}</div></div>
+          <div class="ti">${t.title}${dp}</div>
           <div class="own"><span class="seatdot" style="background:${ow.color}"></span>${ow.name}</div>
           <div class="pri">${t.priority||""}</div>
           <div class="pill s-${t.status}">${t.status.replace(/_/g,' ')}</div>`;
