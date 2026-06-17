@@ -34,7 +34,7 @@ built and committed, and to what standard.
 ## Standing responsibilities
 
 1. **Sole committer discipline** — no one else writes to the repo; advisor work enters only
-   through review → `inbox/` → integration.
+   through review → `council/<agent>/submissions/` → integration.
 2. **Author scoped tasks** — every task gets scope-in, scope-out, grounding sources, and a
    Definition of Done before it leaves `ready`.
 3. **Run the gate** — grade every deliverable (`AGENTS.md` §7); accept or return with numbered

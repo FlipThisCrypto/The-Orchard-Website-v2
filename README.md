@@ -40,7 +40,7 @@ MISSION.md  AGENTS.md            ground truth + operating manual
 governance/ roles · workflow · templates · decisions (ADRs)
 tasks/      tasks.json (source of truth) · TASKS.md · backlog.md
 dashboard/  index.html (live progress) · data.js (generated)
-inbox/      raw advisor submissions (grok · gemini · chatgpt)
+council/    per-advisor workspace — briefs/ (instructions) + submissions/ (returned work)
 docs/       product (ChatGPT) · research (Gemini) · growth (Grok) · architecture + brand (Lead)
 design/ prototypes/ app/   design assets · experiments · the Astro site (later phases)
 scripts/    generate.mjs — rebuilds TASKS.md + data.js from tasks.json

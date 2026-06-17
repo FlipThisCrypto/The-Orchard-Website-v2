@@ -23,7 +23,7 @@ We adopt a **single-Lead, courier, sole-committer** model:
   deliverable per task and never touch the repo.
 - **Richard is the courier:** he relays Task Briefs out and pastes deliverables back.
 - Two enforced laws: **Law 1 (anti-collision)** — only the Lead writes canonical files; one task
-  = one owner = one deliverable; advisor raw output lands in `inbox/<agent>/`. **Law 2
+  = one owner = one deliverable; advisor raw output lands in `council/<agent>/submissions/`. **Law 2
   (anti-hallucination)** — every task carries scope-in, scope-out, grounding sources, and a
   Definition of Done; advisors cite sources, flag assumptions, never fabricate or expand scope.
 - **The repo is public**, so advisors can be grounded against exact source-file URLs.

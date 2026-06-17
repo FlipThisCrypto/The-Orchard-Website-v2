@@ -37,7 +37,7 @@ your lane. Seeing a great idea outside your lane? File it (see §6), don't build
 ### Law 1 — Anti-collision (no working on top of each other)
 - **Only the Lead writes canonical files** (`docs/`, `app/`, `dashboard/`, `tasks/`, `governance/`).
 - Advisors produce **only into their own lane**: a single deliverable per task, returned as text
-  to Richard, which the Lead files under `inbox/<agent>/` before integrating.
+  to Richard, which the Lead files under `council/<agent>/submissions/` before integrating.
 - **One task = one owner = one deliverable file.** Two advisors are never assigned the same file.
 - Nothing reaches `main` except through the Lead's review and commit.
 
@@ -57,7 +57,7 @@ If a fact isn't in a source you can cite, label it an assumption or a question �
 ```
   Lead authors task in tasks.json ........................ status: ready
         │
-        ▼  Lead writes a Task Brief (governance/templates/task-brief.md)
+        ▼  Lead writes a Task Brief → council/<agent>/briefs/ORCH-###.md
   Richard pastes the Brief to the assigned advisor ....... status: assigned
         │
         ▼  Advisor returns a Deliverable (governance/templates/deliverable.md)
@@ -65,7 +65,7 @@ If a fact isn't in a source you can cite, label it an assumption or a question �
         │
         ▼  Lead grades it against the Definition of Done
         ├─ gaps found ─▶ changes_requested (specific notes) ─▶ back to advisor
-        └─ passes ─▶ Lead files raw copy to inbox/<agent>/, integrates into the
+        └─ passes ─▶ Lead files raw copy to council/<agent>/submissions/, integrates into the
                      canonical file, commits, regenerates dashboard ... status: done
 ```
 
@@ -86,7 +86,7 @@ governance/roles/     one end-to-end guide per seat    governance/workflow.md  t
 governance/templates/ task-brief · deliverable · ADR   governance/decisions/   ADRs (logged decisions)
 tasks/tasks.json      THE task list (source of truth)  tasks/TASKS.md          human-readable (generated)
 tasks/backlog.md      parked / out-of-scope ideas      dashboard/index.html    live progress dashboard
-inbox/<agent>/        raw advisor submissions          docs/<lane>/            integrated canonical work
+council/<agent>/      briefs/ (instructions) + submissions/ (work back)   docs/<lane>/   integrated canonical work
 ```
 
 `docs/` lanes: `product/` (ChatGPT) · `research/` (Gemini) · `growth/` (Grok) ·
