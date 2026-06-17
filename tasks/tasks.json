@@ -129,7 +129,7 @@
     },
     {
       "id": "ORCH-014", "title": "Node-state & gamification model", "owner": "chatgpt",
-      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-013"],
+      "status": "done", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-013"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "What a Tree looks/does across states (healthy, idle, offline, failed, withered, new growth); honest gamification that motivates uptime without hype or fake density.",
       "scope_out": "Reward math (Gemini/ChatGPT-design separate); rendering (Lead).",

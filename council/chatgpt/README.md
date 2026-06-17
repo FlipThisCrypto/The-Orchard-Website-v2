@@ -16,9 +16,10 @@ constraints (privacy, performance, cold-start, two audiences). Cite sources, fla
 **never fabricate or expand scope.** Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-014** — Node-state & gamification model → see [`briefs/ORCH-014.md`](briefs/ORCH-014.md).
+- **None — all Phase 1 Product & UX tasks complete.** ✅ Awaiting Phase 2 assignments.
 
 ## Done
+- **ORCH-014** — node-state & gamification model → [`../../docs/product/node-states-gamification.md`](../../docs/product/node-states-gamification.md)
 - **ORCH-013** — fruit → data-class legend → [`../../docs/product/fruit-data-legend.md`](../../docs/product/fruit-data-legend.md)
 - **ORCH-012** — information architecture / sitemap → [`../../docs/product/information-architecture.md`](../../docs/product/information-architecture.md)
 - **ORCH-011** — personas + primary action → [`../../docs/product/personas-and-primary-action.md`](../../docs/product/personas-and-primary-action.md)

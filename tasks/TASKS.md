@@ -3,14 +3,14 @@
 > Auto-generated from `tasks/tasks.json` by `scripts/generate.mjs`. **Do not edit by hand** —
 > edit the JSON and regenerate. Live view: `dashboard/index.html`.
 
-**Overall: 83% complete** — 19/23 tasks · updated 2026-06-17
+**Overall: 87% complete** — 20/23 tasks · updated 2026-06-17
 
 ## By advisor
 
 | Seat | Owner | Done | Total | % |
 |---|---|---|---|---|
 | Lead Dev & Integrator | Claude Code | 8 | 11 | 73% |
-| Product & UX Strategy | ChatGPT | 4 | 5 | 80% |
+| Product & UX Strategy | ChatGPT | 5 | 5 | 100% |
 | Research & Modeling | Gemini | 4 | 4 | 100% |
 | Growth & Markets | Grok | 3 | 3 | 100% |
 
@@ -29,7 +29,7 @@ The coordination system: manual, roles, templates, task board, dashboard, brand 
 | ORCH-007 | Globe/Atlas architecture brief (ADR) | Claude Code | ✅ done | P1 | `docs/architecture/0001-atlas-globe.md` |
 | ORCH-008 | Decision log seeded (ADR 0001, 0002) | Claude Code | ✅ done | P1 | `governance/decisions/` |
 
-## Phase 1 — Direction — 79%
+## Phase 1 — Direction — 86%
 
 Advisors answer the big strategic questions in their lanes; Lead synthesizes into locked decisions (ADRs).
 
@@ -39,7 +39,7 @@ Advisors answer the big strategic questions in their lanes; Lead synthesizes int
 | ORCH-011 | Persona ranking + the single 60-second action | ChatGPT | ✅ done | P0 | `docs/product/personas-and-primary-action.md` |
 | ORCH-012 | Information architecture / sitemap + progressive disclosure | ChatGPT | ✅ done | P1 | `docs/product/information-architecture.md` |
 | ORCH-013 | Fruit -> data-class legend | ChatGPT | ✅ done | P1 | `docs/product/fruit-data-legend.md` |
-| ORCH-014 | Node-state & gamification model | ChatGPT | ⏳ assigned | P2 | `docs/product/node-states-gamification.md` |
+| ORCH-014 | Node-state & gamification model | ChatGPT | ✅ done | P2 | `docs/product/node-states-gamification.md` |
 | ORCH-020 | DePIN competitor teardown | Gemini | ✅ done | P1 | `docs/research/competitors.md` |
 | ORCH-021 | Data-buyer & use-case research | Gemini | ✅ done | P1 | `docs/research/data-buyers-and-use-cases.md` |
 | ORCH-022 | Financial model v0 | Gemini | ✅ done | P2 | `docs/research/financial-model-v0.md` |

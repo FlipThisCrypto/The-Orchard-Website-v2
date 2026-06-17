@@ -64,6 +64,15 @@
 | Decision: GPS as a fruit vs. device metadata | ChatGPT ORCH-013 | Don't imply exact location (Lead leans: metadata) | 2 / Lead |
 | Data-quality / calibration labels before buyer-facing claims | ChatGPT ORCH-013 + Gemini ORCH-021 | B2B buyers won't trust uncalibrated data | later |
 
+## From Phase 1 — round 5 (triaged 2026-06-17)
+
+| Idea | Source | Why | Phase / owner |
+|---|---|---|---|
+| Decision: canonical heartbeat signal (oracle check-in / signed Harvest / device ping) | ChatGPT ORCH-014 | Defines node-state detection | build / Lead |
+| Decision: show "abandoned" publicly vs. softer "long offline" | ChatGPT ORCH-014 | Tone/honesty in public UI | 2 / Richard+ChatGPT |
+| Define exact state thresholds (idle/stale/offline) once Harvest cadence finalized | ChatGPT ORCH-014 | Implementation detail | build / Lead |
+| Owner-dashboard diagnostics for failed/offline Trees (no owner-private leakage) | ChatGPT ORCH-014 | Operator support without doxxing | later / ChatGPT+Lead |
+
 ## How to use this file
 
 - One row per idea: **what** + **why** + a guess at phase/owner.
