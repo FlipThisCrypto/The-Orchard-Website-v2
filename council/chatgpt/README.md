@@ -16,4 +16,7 @@ constraints (privacy, performance, cold-start, two audiences). Cite sources, fla
 **never fabricate or expand scope.** Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-010** — "The Orchard in 2036" positioning + category → see [`briefs/ORCH-010.md`](briefs/ORCH-010.md).
+- **ORCH-011** — Persona ranking + the single 60-second action → see [`briefs/ORCH-011.md`](briefs/ORCH-011.md).
+
+## Done
+- **ORCH-010** — positioning & category → [`../../docs/product/positioning-2036.md`](../../docs/product/positioning-2036.md) *(integrated; pending Richard's ratification)*

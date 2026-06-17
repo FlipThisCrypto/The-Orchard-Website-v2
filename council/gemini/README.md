@@ -16,4 +16,7 @@ estimates and show the method). Separate fact from estimate from assumption. **N
 data, studies, or links.** No scope creep. Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-020** — DePIN competitor teardown → see [`briefs/ORCH-020.md`](briefs/ORCH-020.md).
+- **ORCH-021** — Data-buyer & use-case research → see [`briefs/ORCH-021.md`](briefs/ORCH-021.md).
+
+## Done
+- **ORCH-020** — DePIN competitor teardown → [`../../docs/research/competitors.md`](../../docs/research/competitors.md)

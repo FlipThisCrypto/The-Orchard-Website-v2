@@ -16,4 +16,7 @@ competitor claims — **no fabricated metrics or quotes.** Flag assumptions. No 
 Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-030** — Positioning & messaging pillars → see [`briefs/ORCH-030.md`](briefs/ORCH-030.md).
+- **ORCH-031** — Community & growth plan → see [`briefs/ORCH-031.md`](briefs/ORCH-031.md).
+
+## Done
+- **ORCH-030** — Positioning & messaging pillars → [`../../docs/growth/positioning-and-messaging.md`](../../docs/growth/positioning-and-messaging.md)

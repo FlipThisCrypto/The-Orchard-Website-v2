@@ -18,6 +18,20 @@
 | Governance & DAO surface | If $JUICE/Passes gain governance, the site needs a home for it | later / ChatGPT |
 | Exit-readiness narrative | What an acquirer buys (the network/data/trust) shapes how we present it | later / Gemini + Grok |
 
+## From Phase 1 — round 1 (triaged 2026-06-17)
+
+| Idea | Source | Why | Phase / owner |
+|---|---|---|---|
+| **Decision: adopt "data commons" language?** | ChatGPT ORCH-010 | Use now or reserve until governance/licensing clearer | 1 / Richard |
+| **Decision: environmental-only vs. broader telemetry** | ChatGPT ORCH-010 | Keep door open to power/seismic/infra per VISION, or stay focused | 1 / Richard |
+| Validate category distinctiveness vs DePIN/IoT/climate/weather | ChatGPT ORCH-010 | Confirm "community-owned environmental data infrastructure" is ownable | 1 / Gemini |
+| Apply DIMO Baseline+Marketplace & Helium BME to $JUICE | Gemini ORCH-020 | Reward-model design input | feeds ORCH-022 / Gemini |
+| Geographic reward multipliers for critical ecological zones | Gemini ORCH-020 (GEODNET SuperHex) | Direct deployment where data matters | later / ChatGPT+Lead |
+| Fiat-abstracted B2B data buying (card → burn $JUICE) | Gemini ORCH-020 (Render) | Let Web2 firms buy data easily | 3+ / Lead+Gemini |
+| Tagline A/B test in Discord/X before copy freeze | Grok ORCH-030 | Validate before v2 launch | 2 / Grok |
+| "Globe-first" headline variants once globe is interactive | Grok ORCH-030 | The viz becomes a new message surface | 2 / Grok |
+| Real operator/tester quotes for social proof | Grok ORCH-030 | Credibility for the pillars | 2 / Grok |
+
 ## How to use this file
 
 - One row per idea: **what** + **why** + a guess at phase/owner.

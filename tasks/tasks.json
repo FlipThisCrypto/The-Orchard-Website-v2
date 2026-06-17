@@ -93,7 +93,7 @@
 
     {
       "id": "ORCH-010", "title": "'The Orchard in 2036' positioning + category", "owner": "chatgpt",
-      "status": "assigned", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://theorchard.network/"],
       "scope_in": "One-sentence positioning for 2036 + the category we own; 2-3 alternates with trade-offs; lead with a recommendation.",
       "scope_out": "Visual design; marketing taglines (Grok); market data (Gemini).",
@@ -102,7 +102,7 @@
     },
     {
       "id": "ORCH-011", "title": "Persona ranking + the single 60-second action", "owner": "chatgpt",
-      "status": "ready", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "Rank the audiences (now vs. later); pick the primary persona; define the single most important action a first-time visitor should take in 60 seconds and why.",
       "scope_out": "Full IA (separate task); growth channels (Grok).",
@@ -139,7 +139,7 @@
 
     {
       "id": "ORCH-020", "title": "DePIN competitor teardown", "owner": "gemini",
-      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://hivemapper.com", "https://geodnet.com", "https://weatherxm.com", "https://www.helium.com", "https://rendernetwork.com", "https://dimo.org"],
       "scope_in": "Sourced teardown of 6 DePIN projects (model, traction, tokenomics, data products); one thing to borrow + one to avoid per project; a comparison table.",
       "scope_out": "Our own positioning/copy (Grok); our financial model (separate task).",
@@ -148,7 +148,7 @@
     },
     {
       "id": "ORCH-021", "title": "Data-buyer & use-case research", "owner": "gemini",
-      "status": "ready", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "Who buys environmental sensor data, for what, at what rough price, via what channels; rank use cases (academic, municipal, insurance, agtech, climate) by fit for The Orchard.",
       "scope_out": "Sales copy; IA.",
@@ -176,7 +176,7 @@
 
     {
       "id": "ORCH-030", "title": "Positioning & messaging pillars", "owner": "grok",
-      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "done", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://theorchard.network/"],
       "scope_in": "3-4 messaging pillars; a headline/subhead system; tagline options building on GROW · CONNECT · EARN; how we sound against other DePIN projects — all anti-hype.",
       "scope_out": "IA/UX (ChatGPT); the 2036 category sentence (ChatGPT); hard market data (Gemini).",
@@ -185,7 +185,7 @@
     },
     {
       "id": "ORCH-031", "title": "Community & growth plan", "owner": "grok",
-      "status": "ready", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-030"],
+      "status": "assigned", "priority": "P2", "phase": "1-direction", "depends_on": ["ORCH-030"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md"],
       "scope_in": "Channel strategy (X, Discord, Reddit, Chia + maker communities), content cadence, referral/quest/ambassador mechanics, and 2-3 launch hooks for the v2 globe.",
       "scope_out": "Paid budget modeling (Gemini); product features (ChatGPT).",

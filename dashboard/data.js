@@ -248,7 +248,7 @@ window.TASKS = {
       "id": "ORCH-010",
       "title": "'The Orchard in 2036' positioning + category",
       "owner": "chatgpt",
-      "status": "assigned",
+      "status": "done",
       "priority": "P0",
       "phase": "1-direction",
       "depends_on": [
@@ -274,7 +274,7 @@ window.TASKS = {
       "id": "ORCH-011",
       "title": "Persona ranking + the single 60-second action",
       "owner": "chatgpt",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P0",
       "phase": "1-direction",
       "depends_on": [
@@ -377,7 +377,7 @@ window.TASKS = {
       "id": "ORCH-020",
       "title": "DePIN competitor teardown",
       "owner": "gemini",
-      "status": "assigned",
+      "status": "done",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -409,7 +409,7 @@ window.TASKS = {
       "id": "ORCH-021",
       "title": "Data-buyer & use-case research",
       "owner": "gemini",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -484,7 +484,7 @@ window.TASKS = {
       "id": "ORCH-030",
       "title": "Positioning & messaging pillars",
       "owner": "grok",
-      "status": "assigned",
+      "status": "done",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -510,7 +510,7 @@ window.TASKS = {
       "id": "ORCH-031",
       "title": "Community & growth plan",
       "owner": "grok",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P2",
       "phase": "1-direction",
       "depends_on": [
