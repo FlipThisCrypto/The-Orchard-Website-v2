@@ -16,7 +16,8 @@ competitor claims — **no fabricated metrics or quotes.** Flag assumptions. No 
 Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-031** — Community & growth plan → see [`briefs/ORCH-031.md`](briefs/ORCH-031.md).
+- **ORCH-032** — Real-time DePIN market pulse → see [`briefs/ORCH-032.md`](briefs/ORCH-032.md).
 
 ## Done
-- **ORCH-030** — Positioning & messaging pillars → [`../../docs/growth/positioning-and-messaging.md`](../../docs/growth/positioning-and-messaging.md)
+- **ORCH-031** — community & growth plan → [`../../docs/growth/community-and-growth-plan.md`](../../docs/growth/community-and-growth-plan.md)
+- **ORCH-030** — positioning & messaging pillars → [`../../docs/growth/positioning-and-messaging.md`](../../docs/growth/positioning-and-messaging.md)

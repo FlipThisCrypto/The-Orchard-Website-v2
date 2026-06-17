@@ -31,6 +31,18 @@
 | "Globe-first" headline variants once globe is interactive | Grok ORCH-030 | The viz becomes a new message surface | 2 / Grok |
 | Real operator/tester quotes for social proof | Grok ORCH-030 | Credibility for the pillars | 2 / Grok |
 
+## From Phase 1 — round 2 (triaged 2026-06-17)
+
+| Idea | Source | Why | Phase / owner |
+|---|---|---|---|
+| **Decision: X handle + who posts** | Grok ORCH-031 | Pick @handle (e.g. @theorchard) and posting owner before heavy posting | 1 / Richard |
+| **Decision: seed Discord now or after ~5–10 active Trees** | Grok ORCH-031 | Avoid premature moderation overhead | 1 / Richard |
+| Involve Genesis Pass holders in ambassador/tester design | Grok ORCH-031 | First-class participants shape mechanics | 2 / Grok+Richard |
+| Primary-action design: immediate planters vs capturing non-tech supporters; is Pass required first? | ChatGPT ORCH-011 | Shapes the funnel | feeds ORCH-012 / ChatGPT |
+| Hardware calibration pipeline (assure B2B data quality) | Gemini ORCH-021 | Buyers won't buy uncalibrated ESP32 data | main project / hardware+Lead |
+| Latency vs. buyer segment (epoch >5min loses real-time algo buyers) | Gemini ORCH-021 | Architectural input; focus analytics/insurance | feeds ORCH-022 + architecture |
+| Reconcile fruit→data mapping (Gemini illustrated) with the canonical legend | Gemini ORCH-021 / ChatGPT ORCH-013 | One source of truth for the legend | feeds ORCH-013 / ChatGPT |
+
 ## How to use this file
 
 - One row per idea: **what** + **why** + a guess at phase/owner.

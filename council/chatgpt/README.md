@@ -16,7 +16,8 @@ constraints (privacy, performance, cold-start, two audiences). Cite sources, fla
 **never fabricate or expand scope.** Out-of-scope ideas → a "Proposed follow-ups" list.
 
 ## Active
-- **ORCH-011** — Persona ranking + the single 60-second action → see [`briefs/ORCH-011.md`](briefs/ORCH-011.md).
+- **ORCH-012** — Information architecture / sitemap → see [`briefs/ORCH-012.md`](briefs/ORCH-012.md).
 
 ## Done
-- **ORCH-010** — positioning & category → [`../../docs/product/positioning-2036.md`](../../docs/product/positioning-2036.md) *(integrated; pending Richard's ratification)*
+- **ORCH-011** — personas + primary action → [`../../docs/product/personas-and-primary-action.md`](../../docs/product/personas-and-primary-action.md)
+- **ORCH-010** — positioning & category (ratified, ADR-0003) → [`../../docs/product/positioning-2036.md`](../../docs/product/positioning-2036.md)

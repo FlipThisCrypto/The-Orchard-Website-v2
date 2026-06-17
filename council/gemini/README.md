@@ -15,8 +15,10 @@ One task at a time, your lane only. **Cite every number, claim, and quote** (lab
 estimates and show the method). Separate fact from estimate from assumption. **Never fabricate
 data, studies, or links.** No scope creep. Out-of-scope ideas → a "Proposed follow-ups" list.
 
+
 ## Active
-- **ORCH-021** — Data-buyer & use-case research → see [`briefs/ORCH-021.md`](briefs/ORCH-021.md).
+- **ORCH-022** — Financial model v0 → see [`briefs/ORCH-022.md`](briefs/ORCH-022.md).
 
 ## Done
+- **ORCH-021** — data buyers & use cases → [`../../docs/research/data-buyers-and-use-cases.md`](../../docs/research/data-buyers-and-use-cases.md)
 - **ORCH-020** — DePIN competitor teardown → [`../../docs/research/competitors.md`](../../docs/research/competitors.md)
