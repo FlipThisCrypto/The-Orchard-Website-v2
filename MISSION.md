@@ -22,6 +22,13 @@ The ethos is fixed and non-negotiable in tone:
 If it's truly the world's most valuable asset in 2036, it's because it became **the world's
 largest community-owned environmental data network** — not because of a token price.
 
+**Positioning (ratified 2026-06-17 · ADR-0003):** *"By 2036, The Orchard is the community-owned
+environmental data infrastructure where people plant privacy-preserving Trees, verify real-world
+conditions through open hardware and Chia-backed proofs, and turn local sensing into a shared data
+network rewarded by $JUICE."* Category: **community-owned environmental data infrastructure**
+("data commons" is acceptable language). Scope is **environmental-led but not walled off** — broader
+telemetry (power, seismic, infrastructure) may grow under the umbrella over time.
+
 ## What we are building (this project: v2 website)
 
 A new landing experience built around a **"living globe."** A dark Earth comes into view

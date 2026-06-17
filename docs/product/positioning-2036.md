@@ -2,7 +2,7 @@
 
 > Canonical product positioning for The Orchard v2. Integrated by the Lead from ChatGPT's
 > deliverable **ORCH-010** (`council/chatgpt/submissions/ORCH-010-v1.md`).
-> **Status: PROPOSED — pending Richard's ratification.** Date: 2026-06-17.
+> **Status: ACCEPTED** (ratified by Richard 2026-06-17 — see [ADR-0003](../../governance/decisions/0003-positioning.md)). Working identity, revisitable as we evolve.
 
 ## Recommended positioning (2036)
 
@@ -41,12 +41,12 @@ should be one a city, school, researcher, or grower can understand without first
    architecture embedded; easy-to-grasp loop. *Risk:* "hardware-to-data layer" is abstract for a
    first line; "world's signals" needs care before the network is large.
 
-## Open questions for Richard (carried from ORCH-010)
+## Resolved (ratified 2026-06-17 — see [ADR-0003](../../governance/decisions/0003-positioning.md))
 
-1. Should **"data commons"** become authoritative product language now, or be reserved until
-   governance/licensing policy is clearer?
-2. Should we position around **"environmental data" only**, or keep the door open to broader
-   telemetry (power, seismic, infrastructure) per VISION.md?
+1. **One-liner + category:** adopted as above ("good for now" — revisitable).
+2. **"Data commons":** approved as acceptable product language.
+3. **Scope:** environmental-led, but **leave room** for broader telemetry (power, seismic,
+   infrastructure) over time per VISION.md — the IA and architecture must not wall this off.
 
-*Once ratified, this becomes ADR-0003 (Accepted) and the authoritative input to the information
-architecture (ORCH-012) and messaging (ORCH-030, integrated). Source: ChatGPT, ORCH-010.*
+*This is the authoritative input to the information architecture (ORCH-012) and reconciles with
+messaging (ORCH-030, integrated). Source: ChatGPT, ORCH-010.*

@@ -22,8 +22,7 @@
 
 | Idea | Source | Why | Phase / owner |
 |---|---|---|---|
-| **Decision: adopt "data commons" language?** | ChatGPT ORCH-010 | Use now or reserve until governance/licensing clearer | 1 / Richard |
-| **Decision: environmental-only vs. broader telemetry** | ChatGPT ORCH-010 | Keep door open to power/seismic/infra per VISION, or stay focused | 1 / Richard |
+| ~~Decisions: data-commons + scope~~ | ChatGPT ORCH-010 | ✅ Resolved 2026-06-17 → ADR-0003 (data commons OK; environmental-led, room to grow) | done |
 | Validate category distinctiveness vs DePIN/IoT/climate/weather | ChatGPT ORCH-010 | Confirm "community-owned environmental data infrastructure" is ownable | 1 / Gemini |
 | Apply DIMO Baseline+Marketplace & Helium BME to $JUICE | Gemini ORCH-020 | Reward-model design input | feeds ORCH-022 / Gemini |
 | Geographic reward multipliers for critical ecological zones | Gemini ORCH-020 (GEODNET SuperHex) | Direct deployment where data matters | later / ChatGPT+Lead |
