@@ -248,7 +248,7 @@ window.TASKS = {
       "id": "ORCH-010",
       "title": "'The Orchard in 2036' positioning + category",
       "owner": "chatgpt",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P0",
       "phase": "1-direction",
       "depends_on": [
@@ -377,7 +377,7 @@ window.TASKS = {
       "id": "ORCH-020",
       "title": "DePIN competitor teardown",
       "owner": "gemini",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [
@@ -484,7 +484,7 @@ window.TASKS = {
       "id": "ORCH-030",
       "title": "Positioning & messaging pillars",
       "owner": "grok",
-      "status": "ready",
+      "status": "assigned",
       "priority": "P1",
       "phase": "1-direction",
       "depends_on": [

@@ -35,16 +35,16 @@ Advisors answer the big strategic questions in their lanes; Lead synthesizes int
 
 | ID | Task | Owner | Status | Pri | Deliverable |
 |---|---|---|---|---|---|
-| ORCH-010 | 'The Orchard in 2036' positioning + category | ChatGPT | ▢ ready | P0 | `docs/product/positioning-2036.md` |
+| ORCH-010 | 'The Orchard in 2036' positioning + category | ChatGPT | ⏳ assigned | P0 | `docs/product/positioning-2036.md` |
 | ORCH-011 | Persona ranking + the single 60-second action | ChatGPT | ▢ ready | P0 | `docs/product/personas-and-primary-action.md` |
 | ORCH-012 | Information architecture / sitemap + progressive disclosure | ChatGPT | ▢ ready | P1 | `docs/product/information-architecture.md` |
 | ORCH-013 | Fruit -> data-class legend | ChatGPT | ▢ ready | P1 | `docs/product/fruit-data-legend.md` |
 | ORCH-014 | Node-state & gamification model | ChatGPT | ▢ ready | P2 | `docs/product/node-states-gamification.md` |
-| ORCH-020 | DePIN competitor teardown | Gemini | ▢ ready | P1 | `docs/research/competitors.md` |
+| ORCH-020 | DePIN competitor teardown | Gemini | ⏳ assigned | P1 | `docs/research/competitors.md` |
 | ORCH-021 | Data-buyer & use-case research | Gemini | ▢ ready | P1 | `docs/research/data-buyers-and-use-cases.md` |
 | ORCH-022 | Financial model v0 | Gemini | ▢ ready | P2 | `docs/research/financial-model-v0.md` |
 | ORCH-023 | Nonprofit / compliance research | Gemini | ▢ ready | P2 | `docs/research/nonprofit-compliance.md` |
-| ORCH-030 | Positioning & messaging pillars | Grok | ▢ ready | P1 | `docs/growth/positioning-and-messaging.md` |
+| ORCH-030 | Positioning & messaging pillars | Grok | ⏳ assigned | P1 | `docs/growth/positioning-and-messaging.md` |
 | ORCH-031 | Community & growth plan | Grok | ▢ ready | P2 | `docs/growth/community-and-growth-plan.md` |
 | ORCH-032 | Real-time DePIN market pulse | Grok | ▢ ready | P2 | `docs/growth/depin-market-pulse.md` |
 | ORCH-041 | Performance budget + device targets | Claude Code | ▢ ready | P2 | `docs/architecture/performance-budget.md` |

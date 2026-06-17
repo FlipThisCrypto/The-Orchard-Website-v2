@@ -93,7 +93,7 @@
 
     {
       "id": "ORCH-010", "title": "'The Orchard in 2036' positioning + category", "owner": "chatgpt",
-      "status": "ready", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P0", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://theorchard.network/"],
       "scope_in": "One-sentence positioning for 2036 + the category we own; 2-3 alternates with trade-offs; lead with a recommendation.",
       "scope_out": "Visual design; marketing taglines (Grok); market data (Gemini).",
@@ -139,7 +139,7 @@
 
     {
       "id": "ORCH-020", "title": "DePIN competitor teardown", "owner": "gemini",
-      "status": "ready", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://hivemapper.com", "https://geodnet.com", "https://weatherxm.com", "https://www.helium.com", "https://rendernetwork.com", "https://dimo.org"],
       "scope_in": "Sourced teardown of 6 DePIN projects (model, traction, tokenomics, data products); one thing to borrow + one to avoid per project; a comparison table.",
       "scope_out": "Our own positioning/copy (Grok); our financial model (separate task).",
@@ -176,7 +176,7 @@
 
     {
       "id": "ORCH-030", "title": "Positioning & messaging pillars", "owner": "grok",
-      "status": "ready", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
+      "status": "assigned", "priority": "P1", "phase": "1-direction", "depends_on": ["ORCH-004"],
       "inputs": ["https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/MISSION.md", "https://theorchard.network/"],
       "scope_in": "3-4 messaging pillars; a headline/subhead system; tagline options building on GROW · CONNECT · EARN; how we sound against other DePIN projects — all anti-hype.",
       "scope_out": "IA/UX (ChatGPT); the 2036 category sentence (ChatGPT); hard market data (Gemini).",
