@@ -3,6 +3,11 @@
 > Canonical research. Integrated by the Lead from Gemini's **ORCH-023**
 > (`council/gemini/submissions/ORCH-023-v1.md`). Date: 2026-06-17.
 
+> 🔸 **Status — REFERENCE ONLY (ADR-0004, 2026-06-17):** Richard's existing 501(c)(3) will **not** be
+> linked to The Orchard, so the charity-specific constraints below (UBIT, private inurement,
+> charitable solicitation) **do not bind this project.** Retained for reference only — relevant
+> solely if a charitable entity is ever introduced.
+
 > ⚠️ **This is research, NOT legal or tax advice.** The intersection of DePIN, crypto, and
 > tax-exempt law is volatile and fact-dependent. **Consult a qualified attorney + a CPA who
 > specialize in both Web3 and exempt organizations** before forming entities, issuing tokens, or

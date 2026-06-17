@@ -55,6 +55,7 @@ monster.
   that would expose a Tree's exact location.
 - **Decade horizon:** choose things that won't need a rewrite in two years.
 - **The live v1 site is not touched.** v2 is built in a separate workspace and migrated later.
+- **Legal posture:** The Orchard is **not** operated through Richard's existing 501(c)(3) (ADR-0004); design for a standard (non-charity) entity — exact structure TBD.
 
 ## Authoritative lexicon (use these names in all user-facing work)
 

@@ -58,8 +58,8 @@
 
 | Idea | Source | Why | Phase / owner |
 |---|---|---|---|
-| **Decision (big): token + commercial sales likely a SEPARATE entity from the 501(c)(3)** | Gemini ORCH-023 | Burn-and-mint to holders is a private-benefit red flag; tandem structure is the standard fix | later / Richard + counsel |
-| Research tandem structure (501c3 + for-profit sub) & Wyoming DUNA | Gemini ORCH-023 | Standard Web3 legal split / alternative wrapper | later / Gemini |
+| ~~Decision: token vs 501(c)(3) entity~~ | Gemini ORCH-023 | ✅ Resolved 2026-06-17 → ADR-0004: existing 501(c)(3) is NOT linked to The Orchard; no charity constraints apply | done |
+| Standard for-profit/token entity + tax setup (no charity) | Gemini ORCH-023 / ADR-0004 | Orchard's own structure still TBD; charity wrappers no longer needed | later / Gemini |
 | Decision: pressure = own pear class vs. bundled under microclimate | ChatGPT ORCH-013 | Avoid clutter until pressure earns distinct value | 2 / Richard+ChatGPT |
 | Decision: GPS as a fruit vs. device metadata | ChatGPT ORCH-013 | Don't imply exact location (Lead leans: metadata) | 2 / Lead |
 | Data-quality / calibration labels before buyer-facing claims | ChatGPT ORCH-013 + Gemini ORCH-021 | B2B buyers won't trust uncalibrated data | later |
