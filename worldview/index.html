@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Orchard — Worldview</title>
+<meta name="color-scheme" content="dark" />
+<style>
+  :root{
+    --bg:#070b09; --bg2:#0a1410; --text:#ecfbf3; --muted:#a3bcb0; --muted2:#76907f;
+    --border:rgba(120,230,200,.18); --panel:rgba(10,20,16,.74);
+    --green:#4ade80; --green-bright:#a3e635; --cyan:#2bd4d4; --purple:#b14aef; --orange:#ff9f2e;
+    --holo:linear-gradient(100deg,#b14aef 0%,#4f7bff 26%,#28d0d0 50%,#46e08a 72%,#f4d23c 100%);
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(1200px 800px at 72% -10%,rgba(177,74,239,.10),transparent 60%),
+       radial-gradient(900px 700px at 8% 110%,rgba(43,212,212,.10),transparent 60%),
+       linear-gradient(180deg,var(--bg),#05080a);color:var(--text);font-family:var(--font);overflow:hidden}
+  #globe{position:fixed;inset:0}
+  .holo{background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .overlay{position:fixed;inset:0;pointer-events:none;padding:20px;display:flex;flex-direction:column;justify-content:space-between}
+  .top{max-width:600px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .brand h1{margin:0;font-size:clamp(19px,3vw,27px);font-weight:800;letter-spacing:-.02em}
+  .badge{pointer-events:auto;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#0a0a0a;background:var(--holo);padding:3px 9px;border-radius:999px;font-weight:800}
+  .sub{margin:.35em 0 0;color:var(--muted);font-size:13.5px;max-width:520px;line-height:1.5}
+  .stats{pointer-events:auto;display:flex;gap:18px;margin-top:13px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 15px;backdrop-filter:blur(7px);width:max-content;max-width:100%}
+  .stat .v{font-size:18px;font-weight:800}
+  .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted2)}
+  .dot.on{background:var(--green-bright);box-shadow:0 0 9px var(--green)}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.5)}70%,100%{box-shadow:0 0 0 8px rgba(163,230,53,0)}}
+  .dot.on{animation:ping 2.6s ease-out infinite}
+
+  .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+  .legend{pointer-events:auto;background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:12px 14px;backdrop-filter:blur(8px);max-width:230px}
+  .legend h3{margin:0 0 8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .legend .row{display:flex;align-items:center;gap:9px;font-size:12.5px;margin:4px 0}
+  .sw{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 6px rgba(255,255,255,.15)}
+  .foot{pointer-events:auto;color:var(--muted2);font-size:11px;text-align:right;max-width:330px}
+  .foot code{color:var(--cyan);background:rgba(0,0,0,.34);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+
+  .panel{pointer-events:auto;position:fixed;top:20px;right:20px;width:310px;max-width:calc(100vw - 40px);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;backdrop-filter:blur(11px);box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(380px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s}
+  .panel.show{transform:none;opacity:1}
+  .panel::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:16px 16px 0 0;background:var(--holo)}
+  .panel .x{position:absolute;top:11px;right:12px;cursor:pointer;color:var(--muted);background:none;border:none;font-size:18px}
+  .panel .nid{font-family:var(--mono);font-size:12px;color:var(--cyan);word-break:break-all}
+  .panel h2{margin:7px 0 2px;font-size:16px}
+  .panel .reg{color:var(--muted);font-size:12.5px;margin-bottom:13px}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px}
+  .kv span:first-child{color:var(--muted)}
+  .st{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .st i{width:8px;height:8px;border-radius:50%}
+  .fruits{margin-top:11px;display:flex;gap:6px;flex-wrap:wrap}
+  .fruit{font-size:11.5px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:3px 9px;display:inline-flex;align-items:center;gap:6px}
+  .fruit .fsw{width:8px;height:8px;border-radius:50%}
+  .proof{margin-top:12px;font-size:11.5px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:10px;line-height:1.5}
+  .proof a{color:var(--cyan)} .verify{color:var(--green-bright)}
+  #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  #fallback .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:560px}
+  #fallback ul{text-align:left;color:var(--muted);font-size:14px;line-height:1.7}
+  @media (max-width:640px){ .legend,.foot{display:none} .panel{top:auto;left:20px;right:20px;bottom:20px;width:auto;transform:translateY(380px)} .panel.show{transform:none} }
+</style>
+</head>
+<body>
+  <div id="globe"></div>
+
+  <div class="overlay">
+    <div class="top">
+      <div class="brand"><span class="badge">Worldview</span></div>
+      <h1>The <span class="holo">Orchard</span> — live Trees</h1>
+      <p class="sub">Every point is a real sensor node. Drag to spin, scroll to zoom, click a Tree to inspect it — sensors, uptime, and its on-chain Orchard Pass.</p>
+      <div class="stats">
+        <div class="stat"><div class="v" id="s-trees">—</div><div class="k">Trees</div></div>
+        <div class="stat"><div class="v" id="s-readings">—</div><div class="k">Harvested readings</div></div>
+        <div class="stat"><div class="v" id="s-located">—</div><div class="k">On the map</div></div>
+        <div class="stat"><div class="live"><span class="dot" id="livedot"></span> <span id="livetxt">connecting…</span></div></div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="legend">
+        <h3>Fruit = data class</h3>
+        <div class="row"><i class="sw" style="background:#ff9f2e"></i> 🍊 Temperature</div>
+        <div class="row"><i class="sw" style="background:#f4d23c"></i> 🍋 Air quality</div>
+        <div class="row"><i class="sw" style="background:#4f7bff"></i> 🫐 Humidity</div>
+        <div class="row"><i class="sw" style="background:#a3e635"></i> 🍐 Pressure</div>
+        <div class="row"><i class="sw" style="background:#b14aef"></i> 🍇 Particulates</div>
+        <div class="row"><i class="sw" style="background:#4ade80"></i> 🌱 Online · no sensors yet</div>
+      </div>
+      <div class="foot">Locations are operator-declared, coarse (~5&nbsp;km) regions — never precise GPS. Live data from <code>oracle.theorchard.network</code>. Proof-of-concept.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel">
+    <button class="x" id="px" aria-label="Close">✕</button>
+    <div class="nid" id="p-id"></div>
+    <h2 id="p-title">Tree</h2>
+    <div class="reg" id="p-reg"></div>
+    <div class="kv"><span>State</span><span class="st" id="p-state"></span></div>
+    <div class="kv"><span>Firmware</span><span id="p-fw"></span></div>
+    <div class="kv"><span>Last harvest</span><span id="p-last"></span></div>
+    <div class="fruits" id="p-fruits"></div>
+    <div class="proof" id="p-proof"></div>
+  </div>
+
+  <div id="fallback"><div class="card">
+    <h1>The <span class="holo">Orchard</span> — Worldview</h1>
+    <p class="sub">Your browser can't render the 3D globe (no WebGL). The live network:</p>
+    <ul id="fb-list"></ul>
+  </div></div>
+
+<script src="vendor/globe.gl.min.js"></script>
+<script>
+  const ORACLE = "https://oracle.theorchard.network";
+  const REGION = "Shepherdsville, KY (approx.)";
+  // Operator-declared COARSE locations (the operator's Trees are around
+  // Shepherdsville, KY). Never precise GPS. Used until a node reports a live
+  // geohash from the oracle (which then takes precedence).
+  const LOCATIONS = {
+    "0C59BF4E1F5B815E08AC3D7669593A5E": { lat:37.990, lng:-85.715 },
+    "7DD309EE736A19EA19E6ABF9C5172528": { lat:38.012, lng:-85.700 },
+    "D65F96E44E0EB1CB21F2C01B8C7C89D4": { lat:37.974, lng:-85.736 },
+    "F04EC2E3B76077374BE9142CF91D2CE9": { lat:38.001, lng:-85.690 }
+  };
+  // Real-data snapshot (from the live oracle) — used only when the live fetch
+  // is blocked (e.g., previewing off an *.theorchard.network origin / offline).
+  const SNAPSHOT_NODES = [
+    { node_id:"0C59BF4E1F5B815E08AC3D7669593A5E", sensors:["ds18b20","gps"], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
+    { node_id:"7DD309EE736A19EA19E6ABF9C5172528", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
+    { node_id:"D65F96E44E0EB1CB21F2C01B8C7C89D4", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
+    { node_id:"F04EC2E3B76077374BE9142CF91D2CE9", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null }
+  ];
+  const SNAPSHOT_STATS = { trees_registered:4, readings_total:11605 };
+  const STATE_COLOR = { healthy:"#4ade80", idle:"#2bd4d4", offline:"#76907f" };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // sensor key -> data-class fruit (gps is location metadata, not a fruit)
+  function classify(key){
+    const k = (key||"").toLowerCase();
+    if (k==="gps") return null;
+    if (/ds18|temp/.test(k)) return {type:"Temperature", emoji:"🍊", color:"#ff9f2e"};
+    if (/hum|dht|sht/.test(k)) return {type:"Humidity", emoji:"🫐", color:"#4f7bff"};
+    if (/mq13|voc|co2|aqi|air/.test(k)) return {type:"Air quality", emoji:"🍋", color:"#f4d23c"};
+    if (/pms|pm25|pm10|particul/.test(k)) return {type:"Particulates", emoji:"🍇", color:"#b14aef"};
+    if (/bmp|bme|press|baro/.test(k)) return {type:"Pressure", emoji:"🍐", color:"#a3e635"};
+    if (/soil/.test(k)) return {type:"Soil", emoji:"🍎", color:"#4ade80"};
+    return {type:key, emoji:"🌿", color:"#2bd4d4"};
+  }
+  function fruitsFor(sensors){
+    const out=[], seen=new Set();
+    for(const s of (sensors||[])){ const f=classify(s); if(f && !seen.has(f.type)){ seen.add(f.type); out.push(f); } }
+    return out;
+  }
+  function stateFrom(n){
+    if(!n.last_reading_at) return "healthy"; // snapshot / listed = treat as online
+    const age=(Date.now()-new Date(n.last_reading_at))/3600000;
+    if(age<2) return "healthy"; if(age<26) return "idle"; return "offline";
+  }
+  function ago(d){ if(!d) return "recently"; const s=(Date.now()-new Date(d))/1000; const u=[[86400,"d"],[3600,"h"],[60,"m"]]; for(const[n,l]of u){if(s>=n)return Math.floor(s/n)+l+" ago";} return "just now"; }
+  // geohash -> cell-center {lat,lng} (used if/when the oracle returns one)
+  const GH="0123456789bcdefghjkmnpqrstuvwxyz";
+  function ghCenter(gh){ if(!gh) return null; let even=true,latlo=-90,lathi=90,lonlo=-180,lonhi=180;
+    for(const c of gh){ const cd=GH.indexOf(c); if(cd<0) return null;
+      for(let b=4;b>=0;b--){ const bit=(cd>>b)&1;
+        if(even){ const m=(lonlo+lonhi)/2; if(bit)lonlo=m; else lonhi=m; } else { const m=(latlo+lathi)/2; if(bit)latlo=m; else lathi=m; } even=!even; } }
+    return { lat:(latlo+lathi)/2, lng:(lonlo+lonhi)/2 }; }
+
+  function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
+  const $=(id)=>document.getElementById(id);
+  let world=null;
+
+  async function getJSON(path){ const r=await fetch(ORACLE+path,{cache:"no-store"}); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+  async function load(){
+    let nodes, stats, live=true;
+    try { nodes = await getJSON("/nodes"); } catch(e){ live=false; nodes = SNAPSHOT_NODES; }
+    try { stats = await getJSON("/network/stats"); } catch(e){ stats = SNAPSHOT_STATS; }
+
+    const pts=[];
+    for(const n of nodes){
+      const loc = (n.geohash && ghCenter(n.geohash)) || LOCATIONS[n.node_id] || null;
+      const fruits = fruitsFor(n.sensors);
+      const state = stateFrom(n);
+      const placed = !!loc;
+      const node = { id:n.node_id, short:(n.node_id||"").slice(0,8),
+        lat: loc?loc.lat:null, lng: loc?loc.lng:null,
+        region: n.geohash ? ("cell "+n.geohash) : REGION,
+        fruits, state, fw:n.fw_version, pass:n.pass_nft_id, last:n.last_reading_at,
+        sensors:(n.sensors||[]).filter(s=>s!=="gps"),
+        color: fruits[0] ? fruits[0].color : STATE_COLOR[state] };
+      if(placed) pts.push(node);
+    }
+
+    $("s-trees").textContent = stats.trees_registered ?? nodes.length;
+    $("s-readings").textContent = (stats.readings_total ?? 0).toLocaleString();
+    $("s-located").textContent = pts.length;
+    $("livedot").className = "dot" + (live?" on":"");
+    $("livetxt").textContent = live ? "live" : "snapshot";
+
+    if(!webglOK() || typeof Globe==="undefined"){
+      $("globe").style.display="none"; document.querySelector(".overlay").style.display="none";
+      $("fallback").style.display="flex";
+      $("fb-list").innerHTML = pts.map(p=>`<li><b>${p.short}…</b> — ${p.region} · ${p.state} · ${p.fruits.map(f=>f.emoji+f.type).join(", ")||"online"}</li>`).join("");
+      return;
+    }
+    renderGlobe(pts);
+  }
+
+  function renderGlobe(pts){
+    world = Globe()($("globe"))
+      .globeImageUrl("vendor/earth-night.jpg").backgroundColor("rgba(0,0,0,0)")
+      .showAtmosphere(true).atmosphereColor("#2bd4d4").atmosphereAltitude(0.2)
+      .pointsData(pts).pointLat("lat").pointLng("lng").pointColor("color")
+      .pointAltitude(0.012).pointRadius(0.5).pointResolution(18)
+      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${p.short}…</b><br><span style="color:#a3bcb0">${p.region}</span><br>${p.fruits.map(f=>f.emoji+" "+f.type).join(" · ")||"online · no sensors yet"}</div>`)
+      .onPointClick(showPanel);
+    if(!reduce){ world.ringsData(pts).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
+    const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
+    world.pointOfView({lat:30,lng:-85,altitude:2.3},0);
+    addEventListener("resize",()=>world.width(innerWidth).height(innerHeight));
+    if(!reduce) setTimeout(()=>world.pointOfView({lat:38,lng:-85.7,altitude:1.4},2600),900);
+  }
+
+  function showPanel(p){
+    $("p-id").textContent = p.id;
+    $("p-title").textContent = "Tree";
+    $("p-reg").textContent = "📍 " + p.region;
+    const sc = STATE_COLOR[p.state]||"#76907f";
+    $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${p.state}`;
+    $("p-fw").textContent = p.fw || "—";
+    $("p-last").textContent = ago(p.last);
+    $("p-fruits").innerHTML = p.fruits.length
+      ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${f.color}"></i>${f.emoji} ${f.type}</span>`).join("")
+      : `<span class="fruit">🌱 online · no sensors reporting yet</span>`;
+    const passLink = p.pass ? `<a href="https://mintgarden.io/nfts/${p.pass}" target="_blank" rel="noopener">${p.pass.slice(0,14)}… ↗</a>` : "—";
+    $("p-proof").innerHTML = `🔒 Coarse region only — never precise GPS.<br><span class="verify">✓ Orchard Pass</span> ${passLink}<br>Readings signed at the source; verifiable on Chia.`;
+    $("panel").classList.add("show");
+  }
+  $("px").onclick=()=>$("panel").classList.remove("show");
+
+  load();
+  setInterval(load, 60000); // refresh live data each minute
+</script>
+</body>
+</html>

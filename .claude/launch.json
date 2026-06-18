@@ -12,6 +12,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5060", "--directory", "prototypes/globe-poc"],
       "port": 5060
+    },
+    {
+      "name": "rac",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d I:\\RACdev && npm start"],
+      "port": 3000
     }
   ]
 }
