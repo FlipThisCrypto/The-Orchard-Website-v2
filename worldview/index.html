@@ -21,7 +21,7 @@
        linear-gradient(180deg,var(--bg),#05080a);color:var(--text);font-family:var(--font);overflow:hidden}
   #globe{position:fixed;inset:0}
   .holo{background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .overlay{position:fixed;inset:0;pointer-events:none;padding:20px;display:flex;flex-direction:column;justify-content:space-between}
+  .overlay{position:fixed;inset:0;pointer-events:none;padding:64px 20px 20px;display:flex;flex-direction:column;justify-content:space-between}
   .top{max-width:600px}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .brand h1{margin:0;font-size:clamp(19px,3vw,27px);font-weight:800;letter-spacing:-.02em}
@@ -44,7 +44,7 @@
   .foot{pointer-events:auto;color:var(--muted2);font-size:11px;text-align:right;max-width:330px}
   .foot code{color:var(--cyan);background:rgba(0,0,0,.34);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
 
-  .panel{pointer-events:auto;position:fixed;top:20px;right:20px;width:310px;max-width:calc(100vw - 40px);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;backdrop-filter:blur(11px);box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(380px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s}
+  .panel{pointer-events:auto;position:fixed;top:64px;right:20px;width:310px;max-width:calc(100vw - 40px);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;backdrop-filter:blur(11px);box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(380px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s}
   .panel.show{transform:none;opacity:1}
   .panel::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:16px 16px 0 0;background:var(--holo)}
   .panel .x{position:absolute;top:11px;right:12px;cursor:pointer;color:var(--muted);background:none;border:none;font-size:18px}
@@ -246,5 +246,8 @@
   load();
   setInterval(load, 60000); // refresh live data each minute
 </script>
+<!-- Shared cross-page nav (single source of truth) + shared wallet widget -->
+<script src="orchard-nav.js"></script>
+<script src="https://oracle.theorchard.network/connect.js"></script>
 </body>
 </html>
