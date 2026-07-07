@@ -29,6 +29,15 @@ credentials*.json
 secrets*.json
 .chia/
 
+# Private operating package — candid strategy + opsec (SPOF, deploy internals, unratified
+# tokenomics). Local/private asset only; must NOT be published to the public repo.
+operating-system/
+# Claude Code project config + skills — contain deploy/box internals; keep private.
+.claude/
+__wv/
+__home/
+__tracker.html
+
 # os / editor
 .DS_Store
 Thumbs.db
