@@ -10,6 +10,7 @@
 // on a day when nothing about the tasks changed.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs, showHelp } from './args.mjs';
 import { dirname, join } from 'node:path';
 
 export const isDone = (t) => t.status === 'done';
@@ -84,7 +85,17 @@ export function buildTasksMd(data) {
 }
 
 // ---------------------------------------------------------------------------
+const SPEC = {
+  name: 'generate',
+  path: 'scripts/generate.mjs',
+  summary: 'rebuild tasks/TASKS.md and dashboard/data.js from tasks/tasks.json',
+  flags: { '--check': 'verify the generated files are current; write nothing' },
+  notes: ['Output is a pure function of tasks.json, so --check is meaningful.'],
+};
 function main(argv) {
+  const { help, flags } = parseArgs(argv, SPEC);
+  if (help) showHelp(SPEC);
+
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const data = JSON.parse(readFileSync(join(root, 'tasks/tasks.json'), 'utf8'));
   const outputs = [
@@ -92,7 +103,7 @@ function main(argv) {
     { path: join(root, 'tasks/TASKS.md'), rel: 'tasks/TASKS.md', content: buildTasksMd(data) },
   ];
 
-  if (argv.includes('--check')) {
+  if (flags.has('--check')) {
     const stale = outputs.filter((o) => {
       let current = null;
       try { current = readFileSync(o.path, 'utf8'); } catch { /* missing counts as stale */ }

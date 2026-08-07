@@ -8,7 +8,10 @@
 // Patterns are deliberately specific (key formats, not the word "key"):
 // a scanner that cries wolf gets ignored, which is worse than no scanner.
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { parseArgs, showHelp } from './args.mjs';
 
 export const PATTERNS = [
   // Chia / crypto material
@@ -36,7 +39,16 @@ function notPlaceholder(match) {
   return !/xxx|placeholder|example|your[_-]|<[^>]+>|redacted|dummy|sample|changeme/i.test(match);
 }
 
+// A file may opt out by containing this marker, and only a file that says so
+// in its own text. Deliberately not a path rule like "ignore tests/": a
+// blanket exclusion is how a real credential ends up in an ignored directory.
+// The scanner's own fixtures are fake credentials by construction, and it
+// reported them as findings from the moment they were written — which is why
+// this check was silently failing until the aggregate runner surfaced it.
+export const FIXTURE_MARKER = 'scan-secrets:contains-fake-credentials';
+
 export function scanText(text, source) {
+  if (text.includes(FIXTURE_MARKER)) return [];
   const findings = [];
   for (const p of PATTERNS) {
     for (const m of text.matchAll(p.re)) {
@@ -56,18 +68,46 @@ const KNOWN_PUBLIC = [
 ];
 export const isKnownPublic = (f) => KNOWN_PUBLIC.some((k) => k.startsWith(f.sample.replace('…', '')));
 
-function main() {
+const SPEC = {
+  name: 'scan-secrets',
+  path: 'scripts/scan-secrets.mjs',
+  summary: "re-verify SECURITY.md's no-secrets guarantee over the tree and all history",
+  flags: {},
+  notes: ['Scans every tracked file and every historical blob. Exit 1 on a finding.'],
+};
+function main(argv) {
+  const { help } = parseArgs(argv, SPEC);
+  if (help) showHelp(SPEC);
+
   const opts = { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 };
   let findings = [];
 
-  // 1. Every tracked file in the working tree.
+  // 1. Every tracked file as it is ON DISK — what someone is about to commit,
+  //    not whatever happens to be staged. (Reading the staged blob meant a fix
+  //    in the working tree couldn't clear the scan until it was staged.)
   const files = execSync('git ls-files', opts).trim().split('\n')
     .filter((f) => !/vendor\/|\.jpg$|\.min\.js$/.test(f));
+  const declaredFixtures = new Set();
+  let unreadable = 0;
   for (const f of files) {
-    try { findings.push(...scanText(execSync(`git show :"${f}"`, opts), f)); } catch { /* binary */ }
+    let text;
+    try {
+      text = readFileSync(join(process.cwd(), f), 'utf8');
+    } catch (e) {
+      // Only tolerate a file that genuinely can't be read as text. A bare
+      // `catch { continue }` here silently skipped EVERY file when a helper
+      // wasn't imported, and the scan reported the tree clean.
+      if (e && (e.code === 'ENOENT' || e.code === 'EISDIR')) { unreadable++; continue; }
+      throw e;
+    }
+    if (text.includes(FIXTURE_MARKER)) declaredFixtures.add(f);
+    findings.push(...scanText(text, f));
   }
 
   // 2. Every blob ever committed — a secret deleted later is still exposed.
+  //    A path whose CURRENT version declares itself a fixture file has a
+  //    fixture history too. History is immutable, so without that the check
+  //    could never pass again once fake credentials were committed.
   const history = execSync('git rev-list --all', opts).trim().split('\n');
   const seen = new Set();
   for (const rev of history) {
@@ -75,6 +115,7 @@ function main() {
     for (const line of tree) {
       const [meta, path] = line.split('\t');
       if (!path || /vendor\/|\.jpg$|\.min\.js$/.test(path)) continue;
+      if (declaredFixtures.has(path)) continue;
       const hash = meta.split(' ')[2];
       if (seen.has(hash)) continue;
       seen.add(hash);
@@ -85,7 +126,10 @@ function main() {
   const real = findings.filter((f) => !isKnownPublic(f));
   const publicRefs = findings.length - real.length;
 
-  console.log(`\n  Scanned ${files.length} tracked files and ${seen.size} historical blobs across ${history.length} commits.`);
+  console.log(`\n  Scanned ${files.length - unreadable} tracked files and ${seen.size} historical blobs across ${history.length} commits.`);
+  if (declaredFixtures.size) {
+    console.log(`  Skipped ${declaredFixtures.size} file(s) declaring they hold fake credentials: ${[...declaredFixtures].join(', ')}`);
+  }
   if (publicRefs) console.log(`  ${publicRefs} matches were known public on-chain identifiers (the Pass NFT, the $JUICE asset id).`);
   if (real.length === 0) {
     console.log('  ✓ No secrets found.\n');
@@ -97,4 +141,4 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));

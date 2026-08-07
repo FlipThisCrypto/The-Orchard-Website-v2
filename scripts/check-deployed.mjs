@@ -15,6 +15,7 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs, showHelp } from './args.mjs';
 import { dirname, join } from 'node:path';
 
 export const SITES = {
@@ -74,8 +75,18 @@ export function summarise(rows, headerProblems) {
 }
 
 // ---------------------------------------------------------------------------
+const SPEC = {
+  name: 'check-deployed',
+  path: 'scripts/check-deployed.mjs',
+  summary: 'is production actually running this repo? (byte hashes + security headers)',
+  flags: { '--json': 'machine-readable output' },
+  notes: ['Pages is direct-upload: a git push deploys nothing.', 'Exit 1 means production is stale.'],
+};
 async function main(argv) {
-  const asJson = argv.includes('--json');
+  const { help, flags } = parseArgs(argv, SPEC);
+  if (help) showHelp(SPEC);
+
+  const asJson = flags.has('--json');
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const site = SITES.worldview;
 

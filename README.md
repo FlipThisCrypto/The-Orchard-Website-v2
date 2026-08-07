@@ -85,9 +85,20 @@ generated files were not forgotten:
 node scripts/generate.mjs --check
 ```
 
-## Tests
+## Checks
 
-Zero dependencies — Node's built-in runner, no install step:
+One command runs everything this repo knows how to verify — tests, board sync, script versions,
+and a secrets scan over the tree and all history:
+
+```bash
+node scripts/checks.mjs
+```
+
+Add `--live` to also check that production is running this repo and that the oracle still publishes
+what the page reads. Every script takes `--help`, and refuses a flag it doesn't recognise rather
+than silently doing its default thing.
+
+Just the tests — zero dependencies, Node's built-in runner, no install step:
 
 ```bash
 node --test

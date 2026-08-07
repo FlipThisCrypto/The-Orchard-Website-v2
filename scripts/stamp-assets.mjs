@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs, showHelp } from './args.mjs';
 import { dirname, join } from 'node:path';
 
 /** Pages whose same-origin <script src> URLs get stamped. */
@@ -43,8 +44,18 @@ export function stamp(html, read) {
 }
 
 // ---------------------------------------------------------------------------
+const SPEC = {
+  name: 'stamp-assets',
+  path: 'scripts/stamp-assets.mjs',
+  summary: "stamp each page script's URL with a hash of its contents",
+  flags: { '--check': 'fail if any version is stale; write nothing' },
+  notes: ['Run after editing any page script. The hook and CI run --check.'],
+};
 function main(argv) {
-  const check = argv.includes('--check');
+  const { help, flags } = parseArgs(argv, SPEC);
+  if (help) showHelp(SPEC);
+
+  const check = flags.has('--check');
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const stale = [];
   let stampedCount = 0;

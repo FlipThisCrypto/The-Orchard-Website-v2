@@ -19,6 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs, showHelp } from './args.mjs';
 
 export const ORACLE = 'https://oracle.theorchard.network';
 
@@ -133,8 +134,18 @@ export function summarise(results) {
 }
 
 // ---------------------------------------------------------------------------
+const SPEC = {
+  name: 'check-oracle',
+  path: 'scripts/check-oracle.mjs',
+  summary: 'does the live oracle still publish what worldview/ reads?',
+  flags: { '--json': 'machine-readable output' },
+  notes: ['Also reports documented numbers that have drifted from the live ones.'],
+};
 async function main(argv) {
-  const asJson = argv.includes('--json');
+  const { help, flags } = parseArgs(argv, SPEC);
+  if (help) showHelp(SPEC);
+
+  const asJson = flags.has('--json');
   const results = [];
   for (const [path, contract] of Object.entries(CONTRACT)) {
     let sample = null, error = null;
