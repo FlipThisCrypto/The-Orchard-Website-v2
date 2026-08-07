@@ -49,6 +49,14 @@ Add an owner-set coarse location to the oracle (a `geohash` the operator sets pe
 only the ~5 km cell). Then this page reads location from the API like everything else and the
 `LOCATIONS` map can be retired. Live GPS already auto-fills `geohash` if a Tree ever gets a fix.
 
+## Loading behaviour
+The 3D engine (`globe.gl` — 490 KB gzip, plus a 597 KB texture) is **never a blocking script**. The
+page paints, fetches the oracle and fills the stats and Tree list first; the engine is then injected
+`async` and the globe layers in when it arrives. If it never arrives, the page says so and stays
+fully usable. On `Save-Data`, `deviceMemory ≤ 1` or `hardwareConcurrency ≤ 2` — or with `?low=1` —
+nothing heavy is downloaded at all until you press **Load the globe**. With no WebGL the engine is
+never requested. See [`docs/architecture/performance-budget.md`](../docs/architecture/performance-budget.md).
+
 ## Files
 - `index.html` — the page: layout, globe rendering, panels, the refresh loop.
 - `orchard-data.js` — the pure data logic (fruit classification, node state, geohash decoding,

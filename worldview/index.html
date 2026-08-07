@@ -73,8 +73,12 @@
   /* Keyboard focus must be obvious on a dark, busy background */
   :focus-visible{outline:2px solid var(--green-bright);outline-offset:2px;border-radius:8px}
 
-  .browse{pointer-events:auto;margin-top:11px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:9px 15px;backdrop-filter:blur(7px)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .browse{pointer-events:auto;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:9px 15px;backdrop-filter:blur(7px)}
   .browse:hover{border-color:rgba(120,230,200,.42);background:rgba(120,230,200,.08)}
+  .browse[hidden]{display:none}
+  .gnote{margin:9px 0 0;color:var(--muted);font-size:11.5px;max-width:420px}
+  .gnote[hidden]{display:none}
 
   /* Tree list — the keyboard/touch equivalent of clicking a point */
   .tlist{pointer-events:auto;position:fixed;top:64px;left:20px;width:330px;max-width:calc(100vw - 40px);max-height:calc(100vh - 104px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px 16px 10px;backdrop-filter:blur(11px);box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(-380px);opacity:0;visibility:hidden;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s,visibility 0s linear .35s}
@@ -164,7 +168,11 @@
       </div>
       <!-- The globe is a canvas — this is the keyboard/screen-reader path to
            exactly the same Trees, and the easy way in on a phone. -->
-      <button class="browse" id="browse" aria-expanded="false" aria-controls="treelist">🌳 Browse Trees</button>
+      <div class="actions">
+        <button class="browse" id="browse" aria-expanded="false" aria-controls="treelist">🌳 Browse Trees</button>
+        <button class="browse" id="loadglobe" hidden>🌍 Load the globe</button>
+      </div>
+      <p class="gnote" id="globe-note" hidden></p>
       <p class="sr-only" id="a11y-status" role="status">Loading the network…</p>
     </div>
 
@@ -207,7 +215,8 @@
     <ul class="tl-items" id="fb-list"></ul>
   </div></div>
 
-<script src="vendor/globe.gl.min.js"></script>
+<!-- orchard-data.js is 2 KB and everything needs it; the 3D engine (490 KB gzip)
+     is loaded on demand below so it can never block first paint. -->
 <script src="orchard-data.js"></script>
 <script>
   const ORACLE = "https://oracle.theorchard.network";
@@ -285,8 +294,10 @@
     $("browse").textContent = `🌳 Browse Trees (${pts.length})`;
     renderTreeList($("tl-items"), pts, true);
 
-    if(!webglOK() || typeof Globe==="undefined"){ renderFallback(pts); return; }
-    if(world) updateGlobe(pts); else renderGlobe(pts);
+    // The page is useful now — stats and the Tree list are painted above. The
+    // globe is a bonus layer that arrives when (and if) the engine does.
+    if(!webglOK()){ renderFallback(pts); return; }     // genuinely no WebGL — not "engine still loading"
+    if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
   }
 
   // One list implementation, used by the Tree-list dialog and by the no-WebGL
@@ -421,8 +432,63 @@
     if(document.hidden) stopRefresh(); else { load(); startRefresh(); }
   });
 
-  load();
+  // ---- The 3D engine, loaded on demand ------------------------------------
+  // performance-budget.md, hard rule: "the heavy 3D never blocks first paint",
+  // and "always keep the page useful before the globe loads". globe.gl is
+  // 490 KB gzip (1.75 MB raw) plus a 597 KB texture, so it is never a
+  // parser-blocking <script>: the overlay, the stats and the Tree list render
+  // and the oracle fetch starts first; the globe layers in when it arrives.
+  const conn = navigator.connection || {};
+  const LOW_MODE =
+    new URLSearchParams(location.search).get("low") === "1" ||   // force light mode (also how it's tested)
+    !!conn.saveData ||
+    (navigator.deviceMemory !== undefined && navigator.deviceMemory <= 1) ||
+    (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 2);
+
+  let enginePromise = null;
+  function loadEngine(){
+    if(enginePromise) return enginePromise;
+    enginePromise = new Promise((resolve,reject)=>{
+      const s = document.createElement("script");
+      s.src = "vendor/globe.gl.min.js";
+      s.async = true;
+      s.onload = ()=> (typeof Globe!=="undefined") ? resolve() : reject(new Error("engine loaded but Globe is missing"));
+      s.onerror = ()=> reject(new Error("could not download the globe engine"));
+      document.head.appendChild(s);
+    });
+    return enginePromise;
+  }
+
+  function startGlobe(){
+    note("Loading the globe…");
+    return loadEngine().then(()=>{
+      note("");
+      if(webglOK() && !world && TREES.length) renderGlobe(TREES);
+    }).catch(()=>{
+      note("The 3D globe couldn't load — every Tree is still listed above.");
+    });
+  }
+
+  function note(msg){
+    const el = $("globe-note");
+    el.textContent = msg || "";
+    el.hidden = !msg;
+  }
+
+  function offerGlobe(){
+    // Documented degradation ladder: on Save-Data / low-memory / low-core
+    // devices, start light and let the visitor opt in to the heavy layer.
+    const btn = $("loadglobe");
+    btn.hidden = false;
+    btn.onclick = ()=>{ btn.hidden = true; startGlobe(); };
+    note("Data-saver or low-power device detected — the globe is a ~2 MB download.");
+  }
+
+  load();                                  // data first: stats + Tree list, no engine needed
   if(!document.hidden) startRefresh();
+  if(!webglOK()) { /* the 2D fallback card handles this */ }
+  else if(LOW_MODE) offerGlobe();
+  else startGlobe();
 </script>
 <!-- Shared wallet widget — fills [data-orchard-connect] in the top nav -->
 <script src="https://oracle.theorchard.network/connect.js"></script>

@@ -45,6 +45,26 @@ interaction.
 3. **Live FPS monitor:** if sustained < target, drop instanced count → sprite LOD → 2D, and stop arcs/rotation.
 4. Always keep the page **useful before the globe loads** (routes, copy, CTAs, privacy, readiness check are HTML).
 
+## Where `worldview/` stands today (measured, not estimated)
+
+`worldview/` is the interim real-data page (Path 🅰), not the Phase 3 build, so it is measured
+against the **hard rule** rather than the full table:
+
+| Item | Budget | `worldview/` today |
+|---|---|---|
+| 3D blocks first paint | **never** | ✅ engine is injected `async` after the page renders |
+| Page useful before the globe | required | ✅ stats + full Tree list + detail panels work with no engine at all |
+| Initial transfer (before 3D) | < 150 KB | ✅ ~11 KB gzip (HTML + `orchard-data.js`) |
+| Globe core, gzip | < 250 KB | ❌ **490 KB** — vendored `globe.gl` bundles three.js |
+| Texture | < 256 KB | ❌ **597 KB** `earth-night.jpg` |
+| Save-Data / low memory / low cores | start light, offer opt-in | ✅ shows "Load the globe" instead of auto-downloading (force with `?low=1`) |
+| No WebGL | 2D fallback, same data | ✅ and the engine is never requested |
+
+The two ❌ rows are the vendored library itself: hitting them needs the planned deck.gl/MapLibre
+split with three.js dynamically imported for deep zoom only, plus a compressed texture — a Phase 3
+rebuild, not a tweak to this page. Until then the cost is at least **opt-in and off the critical
+path**.
+
 ## Verification (when built)
 Lighthouse (LCP/TBT/CLS) on marketing routes; bundle-size check in CI against the table above;
 manual FPS check on a mid-tier phone at L0/L1/L2; confirm 2D + reduced-motion paths render the same
