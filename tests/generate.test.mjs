@@ -71,12 +71,23 @@ test('the headline counts authored work and flags what is unplanned', () => {
   assert.match(md, /task data updated 2026-01-02/);
 });
 
-test('the real board reports 23/23 authored with 2 phases unplanned', () => {
+test('the real board reports its own true counts', () => {
+  // Asserted against the data rather than hard-coded numbers: pinning "23/23"
+  // made this fail the moment the board legitimately grew.
   const md = buildTasksMd(real);
-  assert.match(md, /\*\*23\/23 authored tasks done\*\*/);
-  assert.match(md, /2 later phases not yet planned/);
-  assert.match(md, /## Phase 3 — Build — not started/);
-  assert.match(md, /## Phase 4 — Migrate — not started/);
+  const done = real.tasks.filter(isDone).length;
+  assert.match(md, new RegExp(`\\*\\*${done}/${real.tasks.length} authored tasks done\\*\\*`));
+  const unplanned = unplannedPhases(real);
+  for (const ph of unplanned) {
+    assert.ok(md.includes(`## ${ph.title} — not started`), `${ph.title} should be listed as not started`);
+  }
+  if (unplanned.length) {
+    assert.match(md, new RegExp(`${unplanned.length} later phases? not yet planned`));
+  }
+  // Phases that DO hold tasks must never be reported as not started.
+  for (const ph of real.phases.filter((p) => real.tasks.some((t) => t.phase === p.id))) {
+    assert.ok(!md.includes(`## ${ph.title} — not started`), `${ph.title} has tasks but reads as not started`);
+  }
 });
 
 test('a fully unplanned board does not read as 0% of nothing complete', () => {

@@ -3,13 +3,13 @@
 > Auto-generated from `tasks/tasks.json` by `scripts/generate.mjs`. **Do not edit by hand** —
 > edit the JSON and regenerate. Live view: `dashboard/index.html`.
 
-**23/23 authored tasks done** (100% of the work planned so far) · 2 later phases not yet planned · task data updated 2026-06-17
+**32/32 authored tasks done** (100% of the work planned so far) · 1 later phase not yet planned · task data updated 2026-08-06
 
 ## By advisor
 
 | Seat | Owner | Done | Total | % |
 |---|---|---|---|---|
-| Lead Dev & Integrator | Claude Code | 11 | 11 | 100% |
+| Lead Dev & Integrator | Claude Code | 20 | 20 | 100% |
 | Product & UX Strategy | ChatGPT | 5 | 5 | 100% |
 | Research & Modeling | Gemini | 4 | 4 | 100% |
 | Growth & Markets | Grok | 3 | 3 | 100% |
@@ -58,11 +58,21 @@ Wireframes, design tokens, globe proof-of-concept.
 |---|---|---|---|---|---|
 | ORCH-040 | Globe proof-of-concept (3 real Trees) | Claude Code | ✅ done | P1 | `prototypes/globe-poc/` |
 
-## Phase 3 — Build — not started
+## Phase 3 — Build — 100%
 
 Astro shell + globe island + Atlas API on Cloudflare.
 
-_No tasks authored yet._
+| ID | Task | Owner | Status | Pri | Deliverable |
+|---|---|---|---|---|---|
+| ORCH-050 | Worldview: live-Trees globe on real oracle data | Claude Code | ✅ done | P0 | `worldview/` |
+| ORCH-051 | Worldview reliability: in-place refresh, response validation, GPU recovery | Claude Code | ✅ done | P0 | `worldview/index.html` |
+| ORCH-052 | Untrusted-input boundary + response headers | Claude Code | ✅ done | P0 | `worldview/_headers` |
+| ORCH-053 | Worldview: keyboard and screen-reader access to the network | Claude Code | ✅ done | P0 | `worldview/index.html` |
+| ORCH-054 | Worldview performance: lazy engine, bounded list, bounded pulses | Claude Code | ✅ done | P1 | `docs/architecture/performance-budget.md` |
+| ORCH-055 | Automated tests, CI, and a deterministic task-board generator | Claude Code | ✅ done | P0 | `tests/` |
+| ORCH-056 | Mission Control: truthful, resilient, accessible | Claude Code | ✅ done | P1 | `dashboard/` |
+| ORCH-057 | Share metadata and favicon across the published pages | Claude Code | ✅ done | P2 | `favicon.svg` |
+| ORCH-058 | Fruit legend: one source of truth for classes and colours | Claude Code | ✅ done | P1 | `docs/product/fruit-data-legend.md` |
 
 ## Phase 4 — Migrate — not started
 

@@ -12,8 +12,15 @@ hallucinating, or drifting out of scope. If that part interests you, read
 
 > **Status:** Phase 1 (Direction) **complete** — positioning, personas, information architecture,
 > the fruit/data legend, node-state model, competitor + data-buyer research, a v0 financial model,
-> messaging, and a growth plan are all integrated. A globe **proof-of-concept is live** (below).
-> Next: Phase 2 (the production build). The live v1 site is separate and untouched.
+> messaging, and a growth plan are all integrated.
+>
+> **Worldview is live on real data** at [worldview.theorchard.network](https://worldview.theorchard.network/):
+> the globe reads the oracle directly, is keyboard- and screen-reader-navigable, loads its 3D engine
+> off the critical path, survives a lost GPU context, and bounds what it draws as the network grows.
+> The repo has a test suite and CI ([`node --test`](tests/)), response-header hardening, and a task
+> board that regenerates deterministically. This is **Path 🅰** — the interim real-data page. The
+> production Astro shell, tiled Atlas API and Grove-level LOD are still ahead, and Phase 4 (cutover)
+> is not planned yet. The live v1 site is separate and untouched.
 
 ## See it live
 - 🌳 **Worldview — the live Trees globe** — https://worldview.theorchard.network/ — real nodes,

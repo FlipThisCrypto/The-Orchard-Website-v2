@@ -2,7 +2,7 @@
 window.TASKS = {
   "project": "The Orchard v2 — Website",
   "repo": "FlipThisCrypto/The-Orchard-Website-v2",
-  "updated": "2026-06-17",
+  "updated": "2026-08-06",
   "note": "Canonical source of truth for all tasks. TASKS.md and dashboard/data.js are generated from this file. Only the Lead edits it.",
   "phases": [
     {
@@ -631,7 +631,234 @@ window.TASKS = {
       "deliverable_path": "docs/architecture/atlas-data-privacy-contract.md",
       "created": "2026-06-17",
       "updated": "2026-06-17"
+    },
+    {
+      "id": "ORCH-050",
+      "title": "Worldview: live-Trees globe on real oracle data",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-040"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Ship the interim (Path A) real-data globe at worldview.theorchard.network: live /nodes and /network/stats from the oracle, fruit per sensor class, coarse operator-declared locations, Orchard Pass links, snapshot fallback off-origin.",
+      "scope_out": "The Astro production shell; the Atlas tile API; precise GPS of any kind.",
+      "definition_of_done": [
+        "Reads live oracle data on the theorchard.network origin",
+        "Falls back to a real-data snapshot elsewhere",
+        "Coarse regions only — never precise GPS",
+        "Deployed on its own subdomain without touching v1"
+      ],
+      "deliverable_path": "worldview/",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-051",
+      "title": "Worldview reliability: in-place refresh, response validation, GPU recovery",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-050"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Make the page survivable while left open: refresh data into the existing globe instead of rebuilding it, validate oracle response shape so an HTTP-200 error body degrades to the snapshot, and detect/recover from a lost WebGL context with the camera preserved.",
+      "scope_out": "Server-side changes; the oracle API itself.",
+      "definition_of_done": [
+        "One WebGL context regardless of uptime",
+        "Camera position survives every refresh",
+        "No response body can throw out of the refresh loop",
+        "Context loss is explained and recovered"
+      ],
+      "deliverable_path": "worldview/index.html",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-052",
+      "title": "Untrusted-input boundary + response headers",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-050"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Treat every device-reported field as untrusted: escape at each HTML sink, shape-check the Orchard Pass id and geohash, and serve anti-framing, nosniff, referrer and Permissions-Policy headers on the wallet-adjacent origin.",
+      "scope_out": "A strict script-src (needs the inline scripts extracted and the WalletConnect origins enumerated against a real wallet).",
+      "definition_of_done": [
+        "No device string reaches HTML unescaped",
+        "A javascript: Pass id never becomes a link",
+        "Page cannot be framed by a third party",
+        "geolocation denied at the header level"
+      ],
+      "deliverable_path": "worldview/_headers",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-053",
+      "title": "Worldview: keyboard and screen-reader access to the network",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-050"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Give the canvas-only data a real DOM path: a focusable, searchable Tree list that opens the same detail panel, dialog semantics with focus management, and a polite live region for status.",
+      "scope_out": "A full WCAG 2.1 AA audit of every page (backlog).",
+      "definition_of_done": [
+        "Every Tree reachable and openable by keyboard",
+        "Panels are labelled dialogs, inert when closed",
+        "Focus returns to the opener",
+        "Status changes are announced"
+      ],
+      "deliverable_path": "worldview/index.html",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-054",
+      "title": "Worldview performance: lazy engine, bounded list, bounded pulses",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-041",
+        "ORCH-050"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Hold the documented performance budget: load the 3D engine off the critical path with a Save-Data/low-memory opt-in, cap the Tree list with search, and cap the animated ring layer liveness-first — disclosing every cap.",
+      "scope_out": "The deck.gl/MapLibre rebuild and tiled server-side aggregation (Phase 3 proper).",
+      "definition_of_done": [
+        "3D never blocks first paint",
+        "Page useful with no engine at all",
+        "List DOM flat from 100 to 5,000 Trees",
+        "Under the 300 MB budget at 20,000 Trees",
+        "Every cap stated on screen"
+      ],
+      "deliverable_path": "docs/architecture/performance-budget.md",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-055",
+      "title": "Automated tests, CI, and a deterministic task-board generator",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-002"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Give the repo verification it never had: unit tests over the pure data logic and security controls, GitHub Actions running them plus a syntax check, and a generator whose output is a pure function of tasks.json so drift can be detected.",
+      "scope_out": "End-to-end browser tests (no runner in a zero-dependency repo).",
+      "definition_of_done": [
+        "node --test runs with no install step",
+        "CI runs on every push and PR",
+        "Generated board files verified in sync",
+        "Security controls covered by tests that fail when removed"
+      ],
+      "deliverable_path": "tests/",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-056",
+      "title": "Mission Control: truthful, resilient, accessible",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-003"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Stop the dashboard misreporting: stay inside GitHub rate limits and say what actually happened, show unplanned phases as unplanned, keep the embedded board when the live file is unusable, escape every rendered field, and make the swimlane filters keyboard-operable.",
+      "scope_out": "Redesign of the dashboard; new metrics.",
+      "definition_of_done": [
+        "Sustained API use inside the 60/hour budget",
+        "No state described that was not observed",
+        "A bad tasks.json cannot blank the board",
+        "Every control operable by keyboard with state exposed"
+      ],
+      "deliverable_path": "dashboard/",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-057",
+      "title": "Share metadata and favicon across the published pages",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P2",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-006"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Bring the published v2 pages up to the metadata convention the live v1 site already uses: page-specific description, canonical URL, Open Graph and Twitter cards on the project brand banner, theme colour, and an SVG favicon.",
+      "scope_out": "A bespoke per-page social image; analytics.",
+      "definition_of_done": [
+        "Every published page unfurls with a card",
+        "Card images absolute and real",
+        "No two pages share a title or description",
+        "Favicon renders on every surface"
+      ],
+      "deliverable_path": "favicon.svg",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-058",
+      "title": "Fruit legend: one source of truth for classes and colours",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-013"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/architecture/performance-budget.md"
+      ],
+      "scope_in": "Drive classification, colours and the on-screen legend from one table, extend it to the canonical energy and seismic classes, remove the colour collision with node state, and lock code and the canonical doc to each other with tests.",
+      "scope_out": "Grove-level fruit aggregation and LOD (Phase 3 proper).",
+      "definition_of_done": [
+        "Every canonical class reachable from a sensor key",
+        "No two classes share a colour",
+        "Nothing renderable missing from the legend",
+        "Doc and code verified against each other"
+      ],
+      "deliverable_path": "docs/product/fruit-data-legend.md",
+      "created": "2026-08-06",
+      "updated": "2026-08-06"
     }
   ]
 };
-window.TASKS_UPDATED = "2026-06-17";
+window.TASKS_UPDATED = "2026-08-06";
