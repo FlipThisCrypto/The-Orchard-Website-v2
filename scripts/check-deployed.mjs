@@ -24,7 +24,7 @@ export const SITES = {
     // Files served verbatim. index.html is the page itself; the rest are the
     // assets it depends on, which is where "the HTML landed but the siblings
     // didn't" hides.
-    files: ['index.html', 'orchard-data.js', 'favicon.svg'],
+    files: ['index.html', 'orchard-data.js', 'app.js', 'favicon.svg'],
     // Rules from worldview/_headers that must be observable on the response.
     // Uploading _headers is not the same as it being applied.
     requiredHeaders: {

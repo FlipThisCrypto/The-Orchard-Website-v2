@@ -4,7 +4,7 @@
 // Run: node --test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -109,9 +109,24 @@ test('the page and its own scripts are never served stale after a deploy', () =>
 });
 
 test('every path pattern the file declares actually exists in worldview/', () => {
-  // Catches a rule that silently protects nothing because of a typo'd path.
-  const known = new Set(['/*', '/', '/index.html', '/orchard-data.js', '/vendor/*']);
+  // Checked against the real directory, not a hardcoded list, so a rule can't
+  // silently protect nothing because of a typo'd path — and so adding a file
+  // doesn't require editing this test.
+  const dir = join(root, 'worldview');
   for (const pattern of Object.keys(rules)) {
-    assert.ok(known.has(pattern), `unexpected path pattern ${pattern} — add it here and to worldview/ if real`);
+    if (pattern === '/' || pattern === '/*') continue;              // the site root and the catch-all
+    const rel = pattern.replace(/^\//, '').replace(/\/\*$/, '');    // /vendor/* -> vendor
+    assert.ok(existsSync(join(dir, rel)), `_headers rule ${pattern} matches nothing in worldview/`);
+  }
+});
+
+test('every script the page loads from itself has a cache rule', () => {
+  // A same-origin script with no rule inherits the default and can be served
+  // stale after a deploy — the failure that made the page look broken once.
+  const page = readFileSync(join(root, 'worldview/index.html'), 'utf8');
+  const ownScripts = [...page.matchAll(/<script src="(?!https?:)([^"]+)"/g)].map((m) => '/' + m[1]);
+  assert.ok(ownScripts.length >= 2, `expected the page to load its own scripts, found ${ownScripts.length}`);
+  for (const s of ownScripts) {
+    assert.match(rules[s]?.['Cache-Control'] || '', /max-age=0/, `${s} has no no-stale cache rule in _headers`);
   }
 });

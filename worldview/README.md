@@ -80,6 +80,9 @@ never requested. See [`docs/architecture/performance-budget.md`](../docs/archite
 
 ## Files
 - `index.html` — the page: layout, globe rendering, panels, the refresh loop.
+- `app.js` — the page script (rendering, refresh loop, dialogs). External so it caches separately
+  from the always-revalidated HTML, gets syntax-checked in CI, and makes a strict `script-src`
+  possible; the boot error boundary stays inline because it must run first.
 - `orchard-data.js` — the pure data logic (fruit classification, node state, geohash decoding,
   escaping and id validation). No DOM, so it's unit-tested in `tests/` — run `node --test`.
 - `vendor/` — `globe.gl.min.js` (includes three.js) + `earth-night.jpg`. Self-contained, no CDN.

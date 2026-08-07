@@ -12,11 +12,15 @@
   # embedding (theorchard.network and its subdomains) is still allowed.
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: frame-ancestors 'self' https://theorchard.network https://*.theorchard.network; object-src 'none'; base-uri 'self'; form-action 'none'
-  # NOTE: script-src is deliberately absent. connect.js dynamically imports
-  # WalletConnect from https://esm.sh at click time, and the wallet flow can't
-  # be exercised from this repo, so a strict script-src would risk breaking
-  # wallet connect in production. Tightening it needs the inline scripts
-  # extracted and the wallet flow's origins enumerated against a real wallet.
+  # script-src is REPORT-ONLY, and enforces nothing. The page's own scripts are
+  # now external (app.js, orchard-data.js) so a strict policy is finally
+  # possible, but connect.js dynamically imports WalletConnect from esm.sh at
+  # click time and that flow can't be exercised from this repo. Report-only
+  # collects the real violations — connect a wallet once, read the console,
+  # then move this line to Content-Security-Policy to enforce it.
+  # 'unsafe-inline' covers only the boot error boundary, which must be inline
+  # to run before the scripts it guards.
+  Content-Security-Policy-Report-Only: script-src 'self' 'unsafe-inline' https://oracle.theorchard.network https://esm.sh; object-src 'none'; base-uri 'self'
 
   # Don't let a response be re-interpreted as a type it isn't.
   X-Content-Type-Options: nosniff
@@ -49,4 +53,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /orchard-data.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app.js
   Cache-Control: public, max-age=0, must-revalidate
