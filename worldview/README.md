@@ -14,7 +14,7 @@ worldview integration — see the integration notes below.
   is never used or shown. If a node ever reports a live `geohash` from the oracle, that takes
   precedence over the declared location automatically.
 - Drag to rotate (no auto-spin), click a Tree for its Explorer panel. Honors `prefers-reduced-motion`
-  and falls back to a 2D list with no WebGL.
+  and, without WebGL, drops only the canvas — stats, legend, search, Tree list and detail panels all still work.
 - **Keyboard and screen-reader accessible.** The globe is a canvas and can't describe itself, so
   **Browse Trees** opens the same Trees as a focusable list — choose one and the globe flies to it
   and opens the same panel. Both panels are labelled dialogs: focus moves in, `Esc` closes, focus

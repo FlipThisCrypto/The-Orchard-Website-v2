@@ -81,9 +81,6 @@
   .fruit .fsw{width:8px;height:8px;border-radius:50%}
   .proof{margin-top:12px;font-size:11.5px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:10px;line-height:1.5}
   .proof a{color:var(--cyan)} .verify{color:var(--green-bright)}
-  #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
-  #fallback .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:560px}
-  #fallback .tl-items{text-align:left;max-height:min(52vh,420px);overflow:auto}
 
   /* Screen-reader-only text (the globe is a canvas and can't describe itself) */
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
@@ -121,7 +118,6 @@
   .tl-items li{margin:0}
   .tl-items button{width:100%;text-align:left;cursor:pointer;font:inherit;font-size:12.5px;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:11px;padding:9px 11px;display:flex;align-items:center;gap:9px}
   .tl-items button:hover{background:rgba(120,230,200,.1);border-color:rgba(120,230,200,.42)}
-  .tl-items .tl-flat{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.04);font-size:12.5px}
   .tl-items .tl-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tl-items .tl-txt{min-width:0}
   .tl-items .tl-id{font-family:var(--mono);font-size:11.5px;color:var(--cyan)}
@@ -303,11 +299,6 @@
     <div class="proof" id="p-proof"></div>
   </div>
 
-  <div id="fallback"><div class="card">
-    <h1>The <span class="holo">Orchard</span> — Worldview</h1>
-    <p class="sub">Your browser can't render the 3D globe (no WebGL). The live network:</p>
-    <ul class="tl-items" id="fb-list"></ul>
-  </div></div>
 
 <!-- orchard-data.js is 2 KB and everything needs it; the 3D engine (490 KB gzip)
      is loaded on demand below so it can never block first paint. -->
@@ -412,23 +403,25 @@
 
     TREES = pts;
     $("browse").textContent = `🌳 Browse Trees (${pts.length.toLocaleString()})`;
-    renderTreeList($("tl-items"), pts, true);
+    renderTreeList($("tl-items"), pts);
 
     // The page is useful now — stats and the Tree list are painted above. The
     // globe is a bonus layer that arrives when (and if) the engine does.
-    if(!webglOK()){ renderFallback(pts); return; }     // genuinely no WebGL — not "engine still loading"
+    if(!webglOK()){ showWithoutGlobe(); return; }      // genuinely no WebGL — not "engine still loading"
     if(contextLost) return;                            // don't feed data into a dead GPU context
     if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
   }
 
-  // One list implementation, used by the Tree-list dialog and by the no-WebGL
-  // fallback. Every value is device-reported, so everything goes through esc().
-  function renderTreeList(host, pts, interactive){
+  // The one Tree list. Every value is device-reported, so everything goes
+  // through esc(). There used to be a second, non-interactive rendering for
+  // the no-WebGL path; that path now uses this one, because nothing here
+  // needed a GPU in the first place.
+  function renderTreeList(host, pts){
     // Bounded by construction: at the 100,000-Tree design target an unbounded
     // list would be ~600k DOM nodes rebuilt every refresh. The cap is stated
     // on screen and search reaches everything beyond it.
-    const view = interactive ? listView(pts, $("tl-q").value) : listView(pts, "", 200);
-    if(interactive) setNote("tl-count", view.note);
+    const view = listView(pts, $("tl-q").value);
+    setNote("tl-count", view.note);
     const items = view.shown;
     const html = !items.length
       ? `<li class="tl-empty">${esc(view.note)}</li>`
@@ -436,12 +429,8 @@
           const dot = `<i class="tl-dot" style="background:${esc(STATE_COLOR[p.state]||"#76907f")}"></i>`;
           const body = `<span class="tl-txt"><span class="tl-id">${esc(p.short)}…</span>
             <span class="tl-meta">${esc(p.region)} · ${esc(p.state)} · ${esc((p.fruits||[]).map(f=>f.emoji+" "+f.type).join(" · "))||"online · no sensors yet"}</span></span>`;
-          return interactive
-            ? `<li><button type="button" data-i="${i}" aria-label="${esc(treeSummary(p))}">${dot}${body}</button></li>`
-            : `<li><span class="tl-flat">${dot}${body}</span></li>`;
-        }).join("")
-        // The no-WebGL list has no search box, so any cap must be said here.
-        + (!interactive && view.truncated ? `<li class="tl-empty">${esc(view.note)}</li>` : "");
+          return `<li><button type="button" data-i="${i}" aria-label="${esc(treeSummary(p))}">${dot}${body}</button></li>`;
+        }).join("");
 
     // A 60s refresh must not disturb someone using the list: skip the re-render
     // when nothing changed, and put focus back on the same row when it did.
@@ -449,19 +438,21 @@
     const focused = host.contains(document.activeElement) ? document.activeElement.dataset.i : null;
     host.innerHTML = html;
     host.__html = html;
-    if(interactive){
-      host.querySelectorAll("button[data-i]").forEach(b=>{ b.onclick=()=>selectTree(items[+b.dataset.i], b); });
-      if(focused!=null){
-        const again = host.querySelector(`button[data-i="${CSS.escape(focused)}"]`);
-        if(again) again.focus({preventScroll:true});
-      }
+    host.querySelectorAll("button[data-i]").forEach(b=>{ b.onclick=()=>selectTree(items[+b.dataset.i], b); });
+    if(focused!=null){
+      const again = host.querySelector(`button[data-i="${CSS.escape(focused)}"]`);
+      if(again) again.focus({preventScroll:true});
     }
   }
 
-  function renderFallback(pts){
-    $("globe").style.display="none"; document.querySelector(".overlay").style.display="none";
-    $("fallback").style.display="flex";
-    renderTreeList($("fb-list"), pts, false);
+  // No WebGL: drop the canvas, keep everything else. The stats, legend,
+  // privacy note, search, Tree list and detail panels are all plain DOM and
+  // never needed a GPU — the old fallback hid them along with the globe,
+  // which left these visitors with strictly less than the page can give them.
+  function showWithoutGlobe(){
+    $("globe").style.display = "none";
+    note("Your browser can’t render the 3D globe, so this is the same network as a list.");
+    if(!$("treelist").classList.contains("show")) openDialog("treelist", null, {focus:false});
   }
 
   // Refresh path: feed new data into the EXISTING globe. Never re-create it —
@@ -571,12 +562,13 @@
   // while closed they are `inert` so keyboard users never land on a hidden
   // control. (Before this, the closed panel's ✕ was still in the tab order.)
   let openerOf = {};
-  function openDialog(id, opener){
+  function openDialog(id, opener, opts){
     const el = $(id);
     openerOf[id] = opener || document.activeElement;
     el.removeAttribute("inert");
     el.classList.add("show");
     if(id==="treelist") $("browse").setAttribute("aria-expanded","true");
+    if(opts && opts.focus === false) return;   // opened by the page, not by the visitor
     // The list opens on its search box: with 4 Trees you Tab once, with 4,000
     // you type. Either way the first thing focused is the thing that helps.
     (el.querySelector("input[type=search]") || el.querySelector("button[data-i]") || el).focus({preventScroll:true});
@@ -601,7 +593,7 @@
   $("px").onclick = ()=>closeDialog("panel");
   $("tlx").onclick = ()=>closeDialog("treelist");
   // Typing re-renders from the full set, so search reaches past the cap.
-  $("tl-q").addEventListener("input", ()=>renderTreeList($("tl-items"), TREES, true));
+  $("tl-q").addEventListener("input", ()=>renderTreeList($("tl-items"), TREES));
   $("browse").onclick = ()=>{
     if($("treelist").classList.contains("show")) closeDialog("treelist");
     else openDialog("treelist", $("browse"));
@@ -686,7 +678,7 @@
   window.__orchardStarted = true;          // tells the boot boundary the app is alive
   load();                                  // data first: stats + Tree list, no engine needed
   if(!document.hidden) startRefresh();
-  if(!webglOK()) { /* the 2D fallback card handles this */ }
+  if(!webglOK()) { /* showWithoutGlobe() runs from refresh(), once data exists */ }
   else if(LOW_MODE) offerGlobe();
   else startGlobe();
 </script>
