@@ -71,6 +71,7 @@
   .phase-head{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
   .phase-head h3{font-size:15px;font-weight:700;margin:0}
   .phase-head .pp{font-size:12px;color:var(--muted);white-space:nowrap}
+  .phase-head .pp-todo{color:var(--muted2);font-style:italic;white-space:normal}
   .mini2{width:90px;height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:6px}
   .mini2>i{display:block;height:100%;background:var(--green);width:0;transition:width .6s}
   .phase-desc{color:var(--muted2);font-size:12px;margin:0 2px 10px}
@@ -111,7 +112,7 @@
   </div>
 
   <div class="ov">
-    <div class="ov-top"><div class="pct" id="pct">0%</div><div class="cnt" id="cnt"></div></div>
+    <div class="ov-top"><div class="pct" id="pct">0%</div><div class="cnt" id="cnt">—</div></div>
     <div class="bar"><i id="barfill"></i></div>
   </div>
 
@@ -147,9 +148,13 @@
     const tasks = DATA.tasks||[];
     $("repo").textContent = DATA.repo || REPO;
     $("gen").textContent = window.TASKS_GENERATED || DATA.updated || "—";
-    // overall
+    // Overall progress is over the tasks that have been AUTHORED — phases with
+    // no tasks yet are future work, not completed work. Say so, rather than
+    // letting "100%" imply the project is finished.
     const o = pct(tasks); $("pct").textContent = o+"%"; $("barfill").style.width=o+"%";
-    $("cnt").textContent = tasks.filter(isDone).length+" / "+tasks.length+" tasks done";
+    const planned = (DATA.phases||[]).filter(ph=>!tasks.some(t=>t.phase===ph.id));
+    $("cnt").textContent = tasks.filter(isDone).length+" / "+tasks.length+" authored tasks done"
+      + (planned.length ? ` · ${planned.length} later phase${planned.length>1?"s":""} not yet planned` : "");
     $("done-v").innerHTML = tasks.filter(isDone).length+" <small>/ "+tasks.length+"</small>";
 
     // swimlanes
@@ -184,10 +189,16 @@
     const tasks=DATA.tasks||[]; const host=$("phases"); host.innerHTML="";
     for(const ph of (DATA.phases||[])){
       const all=tasks.filter(t=>t.phase===ph.id);
-      if(!all.length) continue;
+      const sec=document.createElement("div"); sec.className="phase";
+      // A phase with no tasks is NOT complete — it hasn't been planned. Show it
+      // as such instead of hiding it, which read as "nothing left to do".
+      if(!all.length){
+        sec.innerHTML=`<div class="phase-head"><h3>${ph.title}</h3><span class="pp pp-todo">not started · no tasks authored yet</span></div>
+          <p class="phase-desc">${ph.desc||""}</p>`;
+        host.appendChild(sec); continue;
+      }
       const shown=all.filter(t=>filter==="all"||t.owner===filter);
       const p=pct(all);
-      const sec=document.createElement("div"); sec.className="phase";
       sec.innerHTML=`<div class="phase-head"><h3>${ph.title}</h3><span class="pp">${p}% · ${all.filter(isDone).length}/${all.length}<span class="mini2"><i style="width:${p}%"></i></span></span></div>
         <p class="phase-desc">${ph.desc||""}</p>`;
       const rows=document.createElement("div"); rows.className="rows";
@@ -210,29 +221,89 @@
   }
   function draw(){ render(); }
 
-  // ---- live GitHub status (works even from file://; CORS-enabled API) ----
-  async function gh(path){ const r=await fetch("https://api.github.com/repos/"+REPO+path,{headers:{Accept:"application/vnd.github+json"}}); if(!r.ok) throw new Error(r.status); return r; }
-  async function ghStatus(){
-    try{ const r=await gh("/commits?per_page=1"); const j=await r.json();
-      if(j.length){ $("ci-v").innerHTML=ago(j[0].commit.author.date); $("ci-dot").className="dot ok"; }
-      else { $("ci-v").textContent="no commits"; }
-    }catch(e){ $("ci-v").innerHTML='<small>not pushed yet</small>'; $("ci-dot").className="dot warn"; }
-    try{ const r=await gh("/pulls?state=open&per_page=100"); const j=await r.json(); $("pr-v").textContent=Array.isArray(j)?j.length:"—"; }catch(e){ $("pr-v").innerHTML='<small>—</small>'; }
-    try{ const r=await gh("/tags?per_page=1"); const j=await r.json(); $("rel-v").textContent=(j&&j.length)?j[0].name:"none"; }catch(e){ $("rel-v").innerHTML='<small>—</small>'; }
-    $("freshness").textContent="status checked "+new Date().toLocaleTimeString();
+  // ---- live GitHub status ---------------------------------------------------
+  // GitHub allows 60 unauthenticated requests per hour PER IP (X-RateLimit-Limit),
+  // shared with every other site the visitor has open. This panel needs 3 calls a
+  // round, so a 60s poll would burn 180/hour: throttled inside ~20 minutes, with
+  // the whole budget spent. Poll every 10 minutes (18/hour), pause when the tab
+  // is hidden, and stop entirely until the documented reset once GitHub says the
+  // budget is gone.
+  const GH_POLL_MS = 600000;
+  let ghTimer = null, ghBlockedUntil = 0, ghRemaining = null;
+
+  async function gh(path){
+    const r = await fetch("https://api.github.com/repos/"+REPO+path, {headers:{Accept:"application/vnd.github+json"}});
+    const rem = r.headers.get("X-RateLimit-Remaining");
+    if(rem !== null) ghRemaining = Number(rem);
+    if(r.status === 403 || r.status === 429){
+      const reset = Number(r.headers.get("X-RateLimit-Reset")||0)*1000;
+      ghBlockedUntil = reset > Date.now() ? reset : Date.now()+GH_POLL_MS;
+      const err = new Error("rate-limited"); err.rateLimited = true; throw err;
+    }
+    if(!r.ok){ const err = new Error("HTTP "+r.status); err.status = r.status; throw err; }
+    return r;
   }
 
+  // Never claim a state we haven't observed: say what actually happened.
+  function ghFail(id, e){
+    const el = $(id);
+    if(e && e.rateLimited) el.innerHTML = '<small>GitHub rate limit — retrying later</small>';
+    else if(e && e.status === 404) el.innerHTML = '<small>repo not reachable</small>';
+    else el.innerHTML = '<small>couldn’t reach GitHub</small>';
+  }
+
+  async function ghStatus(){
+    if(Date.now() < ghBlockedUntil){
+      $("freshness").textContent = "GitHub rate limit — retrying "+new Date(ghBlockedUntil).toLocaleTimeString();
+      return;
+    }
+    try{
+      const j = await (await gh("/commits?per_page=1")).json();
+      if(j.length){ $("ci-v").textContent = ago(j[0].commit.author.date); $("ci-dot").className="dot ok"; }
+      else { $("ci-v").textContent = "no commits"; $("ci-dot").className="dot warn"; }
+    // Rate-limited is a local budget condition, not a broken repo — warn, don't alarm.
+    }catch(e){ ghFail("ci-v", e); $("ci-dot").className = e && e.rateLimited ? "dot warn" : "dot bad"; }
+
+    if(Date.now() < ghBlockedUntil){ ghNote(); return; }   // don't spend calls we know will fail
+    try{ const j = await (await gh("/pulls?state=open&per_page=100")).json(); $("pr-v").textContent = Array.isArray(j) ? j.length : "—"; }
+    catch(e){ ghFail("pr-v", e); }
+
+    if(Date.now() < ghBlockedUntil){ ghNote(); return; }
+    try{ const j = await (await gh("/tags?per_page=1")).json(); $("rel-v").textContent = (j && j.length) ? j[0].name : "none"; }
+    catch(e){ ghFail("rel-v", e); }
+
+    ghNote();
+  }
+
+  function ghNote(){
+    const budget = ghRemaining === null ? "" : ` · ${ghRemaining} GitHub calls left this hour`;
+    $("freshness").textContent = "status checked "+new Date().toLocaleTimeString()+budget;
+  }
+
+  function startGh(){ if(ghTimer===null) ghTimer = setInterval(ghStatus, GH_POLL_MS); }
+  function stopGh(){ if(ghTimer!==null){ clearInterval(ghTimer); ghTimer = null; } }
+
   // ---- live task refresh: try tasks.json (served over http/Pages), else embedded data.js ----
+  // tasks.json changes when the Lead integrates work, not second to second.
+  const TASKS_POLL_MS = 120000;
+  let tasksTimer = null;
   async function refresh(){
-    try{ const r=await fetch("../tasks/tasks.json?_="+Date.now(),{cache:"no-store"}); if(r.ok){ DATA=await r.json(); } }catch(e){}
+    try{ const r = await fetch("../tasks/tasks.json?_="+Date.now(),{cache:"no-store"}); if(r.ok){ DATA = await r.json(); } }catch(e){}
     draw();
   }
+  function startTasks(){ if(tasksTimer===null) tasksTimer = setInterval(refresh, TASKS_POLL_MS); }
+  function stopTasks(){ if(tasksTimer!==null){ clearInterval(tasksTimer); tasksTimer = null; } }
+
+  // A hidden tab shows nobody anything — don't spend anyone's rate limit on it.
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){ stopGh(); stopTasks(); }
+    else { refresh(); ghStatus(); startGh(); startTasks(); }
+  });
 
   draw();                 // immediate paint from embedded data.js
   refresh();              // upgrade to live tasks.json if reachable
   ghStatus();             // live repo status
-  setInterval(refresh, 30000);
-  setInterval(ghStatus, 60000);
+  if(!document.hidden){ startGh(); startTasks(); }
 </script>
 </body>
 </html>
