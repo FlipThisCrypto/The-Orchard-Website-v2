@@ -56,6 +56,27 @@ Anything a Tree reports — `node_id`, `geohash`, sensor names, `fw_version`, `p
 - Local secrets belong in untracked `.env` files (already git-ignored). Use a `.env.example` with
   blank placeholders to document required variables.
 
+## Response headers (deployed pages)
+
+[`worldview/_headers`](worldview/_headers) is served by Cloudflare Pages and is checked by
+`tests/headers.test.mjs`, so it can't rot silently:
+
+- **`X-Frame-Options` + CSP `frame-ancestors`** — third parties can't frame the page. This matters
+  more than usual: the page carries a Connect Wallet button, and a framed, overlaid wallet button
+  is a click away from a wallet prompt the visitor didn't mean to trigger.
+- **CSP `object-src 'none'`, `base-uri 'self'`, `form-action 'none'`** — removes the usual ways an
+  injection gets amplified (plugin execution, `<base>` hijacking of every relative URL, silent form
+  exfiltration). A strict `script-src` is **not** set yet: the wallet widget dynamically imports
+  WalletConnect from `esm.sh` at click time, and that flow can't be exercised from this repo, so
+  locking scripts down without testing it would risk breaking wallet connect in production. Doing
+  it properly means extracting the inline scripts and enumerating the wallet flow's origins.
+- **`Permissions-Policy: geolocation=()`** — the page cannot ask the browser for a location at all,
+  which makes the coarse-location promise structural rather than a code convention.
+- **`nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `COOP: same-origin-allow-popups`.**
+
+GitHub Pages (the dashboard and the globe PoC) does not support custom headers; those surfaces get
+whatever GitHub sends.
+
 ## Maintainer hardening checklist (GitHub settings)
 
 These can't be set from the codebase — enable them in the repo's GitHub settings:

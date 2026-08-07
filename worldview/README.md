@@ -62,3 +62,6 @@ never requested. See [`docs/architecture/performance-budget.md`](../docs/archite
 - `orchard-data.js` — the pure data logic (fruit classification, node state, geohash decoding,
   escaping and id validation). No DOM, so it's unit-tested in `tests/` — run `node --test`.
 - `vendor/` — `globe.gl.min.js` (includes three.js) + `earth-night.jpg`. Self-contained, no CDN.
+- `_headers` — response headers Cloudflare Pages serves: anti-framing (this page has a wallet
+  button), `nosniff`, referrer policy, a `Permissions-Policy` that denies geolocation outright, and
+  caching. Checked by `tests/headers.test.mjs`. See [`SECURITY.md`](../SECURITY.md).

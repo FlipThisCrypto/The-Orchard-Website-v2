@@ -1,0 +1,52 @@
+# Response headers for worldview.theorchard.network (Cloudflare Pages reads this
+# file from the deployed output root). Covered by tests/headers.test.mjs.
+#
+# Why this page in particular: it is served from the theorchard.network zone so
+# it shares the wallet session cookie, and it loads the Connect Wallet widget
+# from oracle.theorchard.network. Anything that can frame it, sniff it, or
+# redirect its requests is a wallet-adjacent risk, not just a website risk.
+
+/*
+  # Clickjacking. A page with a Connect Wallet button must not be frameable by
+  # a third party who can overlay it and harvest the click. First-party
+  # embedding (theorchard.network and its subdomains) is still allowed.
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self' https://theorchard.network https://*.theorchard.network; object-src 'none'; base-uri 'self'; form-action 'none'
+  # NOTE: script-src is deliberately absent. connect.js dynamically imports
+  # WalletConnect from https://esm.sh at click time, and the wallet flow can't
+  # be exercised from this repo, so a strict script-src would risk breaking
+  # wallet connect in production. Tightening it needs the inline scripts
+  # extracted and the wallet flow's origins enumerated against a real wallet.
+
+  # Don't let a response be re-interpreted as a type it isn't.
+  X-Content-Type-Options: nosniff
+
+  # Never leak the full URL to other origins.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # The privacy contract says precise GPS never enters any public path. Make
+  # that structural: this page cannot even ask the browser for a location.
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), serial=(), midi=()
+
+  # Isolate the browsing context, but keep popups working — some wallets
+  # complete the connect flow in one.
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+# The vendored engine and texture are ~2.4 MB, so a repeat visit should pay
+# nothing for them. Deliberately NOT `immutable` and not a year: these
+# filenames carry no content hash, so a client that cached an old copy has no
+# way to be told about a new one. 30 days is the ceiling on how long a vendor
+# update can take to reach everyone. If you ever need it sooner, rename the
+# file — don't lengthen this.
+/vendor/*
+  Cache-Control: public, max-age=2592000
+
+# The page itself must never be stale after a deploy.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/orchard-data.js
+  Cache-Control: public, max-age=0, must-revalidate
