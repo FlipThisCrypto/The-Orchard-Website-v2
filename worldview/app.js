@@ -45,7 +45,7 @@ const ORACLE = "https://oracle.theorchard.network";
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
           networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
           listView, ringSet, legendRows, abortAfter, withDeadline, shapeFor,
-          composition, referenceNow, showCount } = window.OrchardData;
+          composition, referenceNow, showCount, passEvidence, plantedFor } = window.OrchardData;
   let ORACLE_NOW = Date.now();   // replaced by the oracle's as_of_utc each refresh
   let TREES = [];   // the Trees currently shown, in list order
 
@@ -105,6 +105,7 @@ const ORACLE = "https://oracle.theorchard.network";
         lat: loc?loc.lat:null, lng: loc?loc.lng:null,
         region: gh ? ("cell "+gh) : REGION,
         fruits, state, fw:n.fw_version, pass:n.pass_nft_id, last:n.last_reading_at,
+        passVerifiedAt:n.pass_verified_at, registeredAt:n.registered_at,
         sensors:(n.sensors||[]).filter(s=>s!=="gps"),
         color: fruits[0] ? fruits[0].color : STATE_COLOR[state] };
       if(placed) pts.push(node);
@@ -291,7 +292,14 @@ const ORACLE = "https://oracle.theorchard.network";
     const passLink = isNftId(p.pass)
       ? `<a href="https://mintgarden.io/nfts/${encodeURIComponent(p.pass)}" target="_blank" rel="noopener">${esc(p.pass.slice(0,14))}… ↗</a>`
       : (p.pass ? `<span title="unrecognised Pass id">${esc(String(p.pass).slice(0,24))}</span>` : "<span>not published for this Tree</span>");
-    $("p-proof").innerHTML = `🔒 Coarse region only — never precise GPS.<br><span class="verify">✓ Orchard Pass</span> ${passLink}<br>Readings signed at the source; verifiable on Chia.`;
+    // The tick has to carry its own evidence: the oracle publishes when the
+    // Pass was verified on chain, so an unqualified "✓" was a claim the page
+    // could support and wasn't.
+    const ev = passEvidence({pass_verified_at:p.passVerifiedAt}, ORACLE_NOW);
+    const tick = ev.verified ? `<span class="verify">✓ Orchard Pass</span>` : `<span>Orchard Pass</span>`;
+    $("p-proof").innerHTML = `🔒 Coarse region only — never precise GPS.<br>${tick} ${passLink}<br>${esc(ev.text)}.`;
+    const planted = plantedFor({registered_at:p.registeredAt}, ORACLE_NOW);
+    $("p-planted").textContent = planted || "unknown";
     // Name what the oracle doesn't publish, rather than leaving a visitor to
     // guess whether the Tree has no record or the page just doesn't show it.
     $("p-limits").innerHTML = `<b>Not published by the oracle yet:</b> Season uptime · device health · $JUICE rewards · DataLayer proof link.`;

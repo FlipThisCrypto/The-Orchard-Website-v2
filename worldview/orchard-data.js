@@ -199,6 +199,33 @@
     return 'stale';                                   // reachable, data has stopped moving
   }
 
+  /**
+   * Evidence for the Pass tick. The panel used to assert "✓ Orchard Pass"
+   * with nothing behind it; the oracle publishes when the Pass was actually
+   * verified on chain, so the claim can carry its own proof — or stop being
+   * made.
+   */
+  function passEvidence(node, now = Date.now()) {
+    const verified = node && node.pass_verified_at;
+    const t = parseOracleTime(verified);
+    if (!Number.isFinite(t)) return { verified: false, text: 'not verified on chain yet' };
+    if (t - now > SKEW_TOLERANCE_H * 3600000) return { verified: false, text: 'verification timestamp is ahead of the oracle' };
+    return { verified: true, text: 'verified on chain ' + ago(verified, now) };
+  }
+
+  /** How long this Tree has been planted, from the oracle's registered_at. */
+  function plantedFor(node, now = Date.now()) {
+    const t = parseOracleTime(node && node.registered_at);
+    if (!Number.isFinite(t)) return null;
+    const days = Math.floor((now - t) / 86400000);
+    if (days < 0) return null;                     // registered in the future: no usable signal
+    if (days === 0) return 'planted today';
+    if (days === 1) return 'planted yesterday';
+    if (days < 60) return `planted ${days} days ago`;
+    const months = Math.floor(days / 30);
+    return `planted ${months} month${months === 1 ? '' : 's'} ago`;
+  }
+
   function ago(d, now = Date.now()) {
     // "recently" about something that never happened is a lie, and it used to
     // sit directly under "planted, no Harvest yet" in the same panel.
@@ -263,6 +290,10 @@
         // its signal — the whitelist is only safe if it carries everything
         // downstream actually reads.
         last_seen_at: typeof n.last_seen_at === 'string' ? n.last_seen_at : null,
+        // Trust and lifecycle signals the oracle publishes: when the Pass was
+        // checked on chain, and when the Tree was planted.
+        pass_verified_at: typeof n.pass_verified_at === 'string' ? n.pass_verified_at : null,
+        registered_at: typeof n.registered_at === 'string' ? n.registered_at : null,
       });
     }
     return out;
@@ -441,7 +472,8 @@
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
-    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, referenceNow, ago, treeSummary, networkSummary, composition,
+    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, referenceNow, ago, passEvidence, plantedFor,
+    treeSummary, networkSummary, composition,
     normalizeNodes, normalizeStats, STAT_FIELDS, showCount, lookup, abortAfter, withDeadline, parseOracleTime,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,

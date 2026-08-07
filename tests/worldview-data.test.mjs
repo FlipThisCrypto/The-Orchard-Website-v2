@@ -269,7 +269,10 @@ test('normalizeNodes keeps well-formed nodes and drops junk entries', () => {
   ]);
   assert.equal(out.length, 2);
   assert.deepEqual(out[0].sensors, ['ds18b20']);   // non-strings dropped
-  assert.deepEqual(out[1], { node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null, last_reading_at: null, last_seen_at: null });
+  assert.deepEqual(out[1], {
+    node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null,
+    last_reading_at: null, last_seen_at: null, pass_verified_at: null, registered_at: null,
+  });
 });
 
 test('normalizeNodes coerces every field to a known type', () => {
@@ -907,4 +910,63 @@ test('the real oracle payload shape resolves to sensible states', () => {
   const now = referenceNow({ as_of_utc: asOf });
   assert.equal(stateFrom({ last_seen_at: '2026-08-07T11:38:00.000000', last_reading_at: '2026-08-07T11:38:00.000000' }, now), 'healthy');
   assert.equal(stateFrom({ last_seen_at: '2026-07-26T23:47:51.359575', last_reading_at: '2026-07-26T23:47:51.359575' }, now), 'offline');
+});
+
+// ---------------------------------------------------------------------------
+// Trust and lifecycle signals. The panel asserted "✓ Orchard Pass" with a
+// green tick and nothing behind it, while the oracle published exactly the
+// evidence that claim needed.
+// ---------------------------------------------------------------------------
+const { passEvidence, plantedFor } = OrchardData;
+
+test('the Pass tick is only claimed when there is evidence for it', () => {
+  const verified = passEvidence({ pass_verified_at: '2026-06-16T09:11:06.411151' }, NOW);
+  assert.equal(verified.verified, true);
+  assert.match(verified.text, /^verified on chain \d+d ago$/);
+});
+
+test('no verification timestamp means no verification claim', () => {
+  for (const v of [null, undefined, '', 'nonsense', 42, {}]) {
+    const ev = passEvidence({ pass_verified_at: v }, NOW);
+    assert.equal(ev.verified, false, `should not claim verified for ${JSON.stringify(v)}`);
+    assert.equal(ev.text, 'not verified on chain yet');
+  }
+  assert.equal(passEvidence(null, NOW).verified, false);
+});
+
+test('a verification timestamp ahead of the oracle is not treated as proof', () => {
+  const ev = passEvidence({ pass_verified_at: new Date(NOW + 5 * 3600e3).toISOString() }, NOW);
+  assert.equal(ev.verified, false);
+  assert.match(ev.text, /ahead of the oracle/);
+});
+
+test('pass evidence is read as UTC like every other oracle timestamp', () => {
+  // Offset-less, exactly as the oracle sends it.
+  const naive = '2026-08-07T11:00:00.000000';
+  const now = Date.parse('2026-08-07T12:00:00Z');
+  assert.match(passEvidence({ pass_verified_at: naive }, now).text, /1h ago/);
+});
+
+test('plantedFor reads registered_at in human terms', () => {
+  const daysAgo = (d) => new Date(NOW - d * 86400000).toISOString().replace('Z', '');
+  assert.equal(plantedFor({ registered_at: daysAgo(0) }, NOW), 'planted today');
+  assert.equal(plantedFor({ registered_at: daysAgo(1) }, NOW), 'planted yesterday');
+  assert.equal(plantedFor({ registered_at: daysAgo(52) }, NOW), 'planted 52 days ago');
+  assert.equal(plantedFor({ registered_at: daysAgo(95) }, NOW), 'planted 3 months ago');
+});
+
+test('plantedFor returns null rather than inventing a planting date', () => {
+  for (const v of [null, undefined, '', 'nonsense', 42]) {
+    assert.equal(plantedFor({ registered_at: v }, NOW), null, `should not resolve ${JSON.stringify(v)}`);
+  }
+  // Registered in the future is not a usable signal either.
+  assert.equal(plantedFor({ registered_at: new Date(NOW + 86400000).toISOString() }, NOW), null);
+});
+
+test('normalizeNodes carries the trust and lifecycle fields', () => {
+  const [n] = normalizeNodes([{
+    node_id: 'A', pass_verified_at: '2026-06-16T09:11:06.411151', registered_at: '2026-06-16T09:11:04.370897',
+  }]);
+  assert.equal(n.pass_verified_at, '2026-06-16T09:11:06.411151');
+  assert.equal(n.registered_at, '2026-06-16T09:11:04.370897');
 });
