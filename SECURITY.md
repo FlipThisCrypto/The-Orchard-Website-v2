@@ -19,11 +19,13 @@ and credit you if you'd like. This is a pre-alpha, community project — please 
   this repo — in the working tree **or anywhere in git history**. `.gitignore` is hardened against
   committing them, and `node scripts/scan-secrets.mjs` re-verifies it over every file that could
   reach a commit — including ones git hasn't been told about yet — and every historical blob.
-  **CI runs it on every push and pull request**, against a full-history checkout, so this is a
-  continuously enforced property rather than a dated claim someone has to remember to refresh.
-  (It previously *was* such a claim, and it was wrong: the scan sat broken for four iterations
-  because nothing automated ran it.) The two on-chain identifiers it finds — the public Orchard
-  Pass NFT and the $JUICE asset id — are cited on purpose and allowlisted.
+  **The pre-commit hook and CI both run it**, so a credential is caught before it enters a commit,
+  not after it has been pushed. This is a continuously enforced property rather than a dated claim
+  someone has to remember to refresh. (It previously *was* such a claim, and it was wrong: the scan
+  sat broken for four iterations because nothing automated ran it.) The scan **fails** rather than
+  passes on a shallow clone, which cannot support a statement about all of history. The two
+  on-chain identifiers it finds — the public Orchard Pass NFT and the $JUICE asset id — are cited
+  on purpose and allowlisted.
 - ✅ **No precise locations.** Tree positions are shown only as **coarse (~5 km) regions / geohash
   cells**, never precise GPS. The PoC's sample coordinates are region-level and representative.
 - ✅ **No privileged endpoints or internals** that would aid an attack. Public service URLs

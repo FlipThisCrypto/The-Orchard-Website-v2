@@ -68,12 +68,65 @@ const KNOWN_PUBLIC = [
 ];
 export const isKnownPublic = (f) => KNOWN_PUBLIC.some((k) => k.startsWith(f.sample.replace('…', '')));
 
+/** A blob larger than this is a build artefact or asset, not a leaked key. */
+const MAX_BLOB = 2 * 1024 * 1024;
+
+/**
+ * Read many blobs through ONE `git cat-file --batch` process.
+ * Returns [{ text, path }] for text blobs only — binaries and oversized
+ * objects are skipped, as are trees (the object list includes directories).
+ */
+export function batchRead(entries, run = execSync) {
+  const byHash = new Map();
+  for (const e of entries) if (!byHash.has(e.hash)) byHash.set(e.hash, e.path);
+  if (!byHash.size) return [];
+
+  // No encoding: a Buffer, because blob bodies are byte-counted and may be
+  // binary. Decoding the whole stream as utf8 would desynchronise the parser.
+  const buf = run('git cat-file --batch', {
+    input: [...byHash.keys()].join('\n'),
+    maxBuffer: 512 * 1024 * 1024,
+  });
+
+  const out = [];
+  let i = 0;
+  while (i < buf.length) {
+    const nl = buf.indexOf(0x0a, i);
+    if (nl < 0) break;
+    const [oid, type, size] = buf.toString('utf8', i, nl).split(' ');
+    i = nl + 1;
+    if (type === 'missing') continue;
+    const bytes = Number(size);
+    const body = buf.subarray(i, i + bytes);
+    i += bytes + 1; // git writes a trailing LF after each body
+    if (type !== 'blob' || bytes > MAX_BLOB || body.includes(0)) continue;
+    out.push({ text: body.toString('utf8'), path: byHash.get(oid) });
+  }
+  return out;
+}
+
+/** A shallow clone can't support a claim about "all of git history". */
+function assertFullHistory(opts) {
+  if (execSync('git rev-parse --is-shallow-repository', opts).trim() !== 'true') return;
+  console.error(
+    '\n  ✗ This is a SHALLOW clone, so most of history is not present.\n' +
+    "    Scanning it would read almost nothing and report 'No secrets found',\n" +
+    '    which is worse than not running at all.\n' +
+    '    Fetch full history first:  git fetch --unshallow\n' +
+    '    In GitHub Actions:         actions/checkout with fetch-depth: 0\n'
+  );
+  process.exit(1);
+}
+
 const SPEC = {
   name: 'scan-secrets',
   path: 'scripts/scan-secrets.mjs',
   summary: "re-verify SECURITY.md's no-secrets guarantee over the tree and all history",
   flags: {},
-  notes: ['Scans every tracked file and every historical blob. Exit 1 on a finding.'],
+  notes: [
+    'Scans every file that could reach a commit and every historical blob.',
+    'Exit 1 on a finding, or on a shallow clone it cannot honestly scan.',
+  ],
 };
 function main(argv) {
   const { help } = parseArgs(argv, SPEC);
@@ -112,29 +165,44 @@ function main(argv) {
     findings.push(...scanText(text, f));
   }
 
-  // 2. Every blob ever committed — a secret deleted later is still exposed.
+  // 2. Refuse to scan history this clone doesn't have. `git rev-list --all` on
+  //    a shallow clone returns the tip and nothing else, so the scan would read
+  //    almost nothing and print "No secrets found" with total confidence — a
+  //    green check proving the opposite of what it claims. CI needed
+  //    fetch-depth: 0 for exactly this reason; a check shouldn't depend on
+  //    every caller remembering that.
+  assertFullHistory(opts);
+
+  // 3. Every blob ever committed — a secret deleted later is still exposed.
   //    A path whose CURRENT version declares itself a fixture file has a
   //    fixture history too. History is immutable, so without that the check
   //    could never pass again once fake credentials were committed.
-  const history = execSync('git rev-list --all', opts).trim().split('\n');
-  const seen = new Set();
-  for (const rev of history) {
-    const tree = execSync(`git ls-tree -r ${rev}`, opts).trim().split('\n');
-    for (const line of tree) {
-      const [meta, path] = line.split('\t');
-      if (!path || /vendor\/|\.jpg$|\.min\.js$/.test(path)) continue;
-      if (declaredFixtures.has(path)) continue;
-      const hash = meta.split(' ')[2];
-      if (seen.has(hash)) continue;
-      seen.add(hash);
-      try { findings.push(...scanText(execSync(`git cat-file blob ${hash}`, opts), `${rev.slice(0, 8)}:${path}`)); } catch { /* binary */ }
-    }
+  //
+  //    Two processes, not one per blob. This used to spawn `git ls-tree` per
+  //    commit and `git cat-file` per blob — ~385 processes, ~19s of pure spawn
+  //    overhead on Windows. That cost was the only reason the strongest check
+  //    in the repo ran at push time instead of at every commit.
+  const commits = execSync('git rev-list --all', opts).trim().split('\n').filter(Boolean);
+  const objects = execSync('git rev-list --all --objects', opts).split('\n');
+  const wanted = [];
+  for (const line of objects) {
+    const sp = line.indexOf(' ');
+    if (sp < 0) continue;                       // commits and the root tree carry no path
+    const hash = line.slice(0, sp), path = line.slice(sp + 1);
+    if (!path || /vendor\/|\.jpg$|\.min\.js$/.test(path)) continue;
+    if (declaredFixtures.has(path)) continue;
+    wanted.push({ hash, path });
   }
+  // Count what was actually READ, not what was asked for: `wanted` holds one
+  // entry per (object, path) pair and includes directory trees, so reporting
+  // its length would overstate the scan by ~2x.
+  const blobs = batchRead(wanted);
+  for (const { text, path } of blobs) findings.push(...scanText(text, `history:${path}`));
 
   const real = findings.filter((f) => !isKnownPublic(f));
   const publicRefs = findings.length - real.length;
 
-  console.log(`\n  Scanned ${files.length - unreadable} working-tree files (tracked and not-yet-added) and ${seen.size} historical blobs across ${history.length} commits.`);
+  console.log(`\n  Scanned ${files.length - unreadable} working-tree files (tracked and not-yet-added) and ${blobs.length} historical text blobs across ${commits.length} commits.`);
   if (declaredFixtures.size) {
     console.log(`  Skipped ${declaredFixtures.size} file(s) declaring they hold fake credentials: ${[...declaredFixtures].join(', ')}`);
   }
@@ -143,8 +211,21 @@ function main(argv) {
     console.log('  ✓ No secrets found.\n');
     process.exit(0);
   }
+
   console.log(`\n  ✗ ${real.length} potential secrets:`);
-  for (const f of real) console.log(`     ${f.pattern} in ${f.source} — "${f.sample}"`);
+  for (const f of real) {
+    console.log(`     ${f.pattern} in ${f.source} — "${f.sample}"`);
+    // Attribution costs a process per finding, so it's paid only when there IS
+    // one. Batch reading gives the path but not the commits that carried it,
+    // and "which commits do I have to rewrite?" is the first question asked.
+    if (f.source.startsWith('history:')) {
+      const path = f.source.slice('history:'.length);
+      try {
+        const log = execSync(`git log --all --format=%h --max-count=8 -- "${path}"`, opts).trim();
+        if (log) console.log(`        carried by commits: ${log.split('\n').join(', ')}`);
+      } catch { /* path may predate a rename; the path alone is still actionable */ }
+    }
+  }
   console.log('');
   process.exit(1);
 }

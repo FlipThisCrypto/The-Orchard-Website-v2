@@ -28,12 +28,12 @@ jobs:
       # No dependencies to install — the repo is deliberately zero-dependency
       # and uses Node's built-in test runner.
       #
-      # What runs is defined once, in scripts/checks.mjs, and shared with the
-      # pre-commit hook. It used to be spelled out here AND in the hook AND in
-      # that script, and no two agreed: neither automated gate ran the secrets
-      # scan, which is how it stayed broken for four iterations while
-      # SECURITY.md cited it. A gate that is described in three places is
-      # three gates.
+      # What runs is defined once, in scripts/checks.mjs, and this is the
+      # IDENTICAL command the pre-commit hook runs. It used to be spelled out
+      # here AND in the hook AND in that script, and no two agreed: neither
+      # automated gate ran the secrets scan, which is how it stayed broken for
+      # four iterations while SECURITY.md cited it. A gate that is described in
+      # three places is three gates.
       #
       # Deliberately excluded: --live. Pages is direct-upload, so production
       # legitimately lags the repo between deploys and failing PRs for that

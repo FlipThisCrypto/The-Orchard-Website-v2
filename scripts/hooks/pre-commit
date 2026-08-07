@@ -13,13 +13,14 @@
 # What runs is NOT restated here — it lives in scripts/checks.mjs, shared with
 # CI. When it was written out in shell here and again in YAML there, the two
 # drifted, and the check neither of them ran (the secrets scan) was the one
-# that broke. --fast is the quick tier; CI runs the slow ones too, so a commit
-# is never blocked for 20 seconds on a full-history scan.
+# that broke.
+#
+# This runs the IDENTICAL command CI runs, secrets scan included. There was
+# briefly a reduced tier here to keep commits quick; batching the scan's git
+# reads removed the reason for it. Nothing is deferred to push, so a leaked
+# credential never reaches a commit at all.
 set -e
 
-echo "pre-commit: running the fast checks…"
+echo "pre-commit: running the gate…"
 
-node scripts/checks.mjs --fast || {
-  echo "  Full set (what CI runs): node scripts/checks.mjs"
-  exit 1
-}
+node scripts/checks.mjs || exit 1

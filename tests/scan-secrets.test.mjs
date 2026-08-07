@@ -11,7 +11,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { scanText, isKnownPublic, FIXTURE_MARKER } from '../scripts/scan-secrets.mjs';
+import { Buffer } from 'node:buffer';
+import { scanText, isKnownPublic, FIXTURE_MARKER, batchRead } from '../scripts/scan-secrets.mjs';
 
 test('detects each class of secret it claims to cover', () => {
   const secrets = [
@@ -80,4 +81,60 @@ test('the tree scan covers files git has not been told about yet', () => {
   assert.ok(cmd, 'expected a git ls-files invocation');
   assert.match(cmd[1], /--others/, 'untracked files must be scanned');
   assert.match(cmd[1], /--exclude-standard/, 'but .gitignore must still be honoured');
+});
+
+// --- batchRead: one process for every blob, so the parser must not lose sync ---
+const LF = Buffer.from([0x0a]);
+const obj = (oid, type, body) =>
+  Buffer.concat([Buffer.from(`${oid} ${type} ${body.length}`), LF, body, LF]);
+const fakeGit = (buf) => () => buf;
+
+test('batchRead returns each blob with the path it was requested under', () => {
+  const buf = Buffer.concat([
+    obj('a'.repeat(40), 'blob', Buffer.from('first')),
+    obj('b'.repeat(40), 'blob', Buffer.from('second')),
+  ]);
+  const out = batchRead(
+    [{ hash: 'a'.repeat(40), path: 'one.txt' }, { hash: 'b'.repeat(40), path: 'two.txt' }],
+    fakeGit(buf)
+  );
+  assert.deepEqual(out, [
+    { text: 'first', path: 'one.txt' },
+    { text: 'second', path: 'two.txt' },
+  ]);
+});
+
+test('batchRead skips trees, binaries and missing objects without desyncing', () => {
+  // Every skipped object still has to advance the cursor by its byte count.
+  // Getting that wrong doesn't drop one object — it garbles every object
+  // after it, and the scan silently stops matching anything.
+  const buf = Buffer.concat([
+    obj('a'.repeat(40), 'tree', Buffer.from('tree-bytes-here')),
+    obj('b'.repeat(40), 'blob', Buffer.from([0x00, 0x01, 0x02])),
+    Buffer.concat([Buffer.from(`${'c'.repeat(40)} missing`), LF]),
+    obj('d'.repeat(40), 'blob', Buffer.from('survivor')),
+  ]);
+  const out = batchRead(
+    ['a', 'b', 'c', 'd'].map((c) => ({ hash: c.repeat(40), path: `${c}.txt` })),
+    fakeGit(buf)
+  );
+  assert.deepEqual(out, [{ text: 'survivor', path: 'd.txt' }]);
+});
+
+test('batchRead asks git for each object exactly once', () => {
+  // The object list names a blob once per path it ever had; without deduping,
+  // an unchanged file costs one read per commit that touched its directory.
+  let input = null;
+  const spy = (_cmd, opts) => { input = opts.input; return obj('a'.repeat(40), 'blob', Buffer.from('x')); };
+  batchRead([
+    { hash: 'a'.repeat(40), path: 'now.txt' },
+    { hash: 'a'.repeat(40), path: 'renamed-from.txt' },
+  ], spy);
+  assert.deepEqual(input.split(LF.toString()), ['a'.repeat(40)]);
+});
+
+test('batchRead handles an empty request without spawning git', () => {
+  let called = false;
+  assert.deepEqual(batchRead([], () => { called = true; return Buffer.alloc(0); }), []);
+  assert.equal(called, false);
 });

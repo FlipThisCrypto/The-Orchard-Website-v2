@@ -20,11 +20,10 @@ const SPEC = {
   path: 'scripts/checks.mjs',
   summary: 'run the repo\'s checks and report which passed',
   flags: {
-    '--fast': 'only the quick checks (what the pre-commit hook runs)',
     '--live': 'also check production deployment and the live oracle',
   },
   notes: [
-    'Default runs every hermetic check — the same set CI runs.',
+    'The default set is exactly what the pre-commit hook and CI both run.',
     'Exit 1 if any check fails.',
   ],
 };
@@ -45,22 +44,26 @@ function scriptsToParse() {
   return out;
 }
 
-// tier: 'fast' runs everywhere; 'full' adds the slow hermetic checks; 'live'
-// reaches the network and is never automatic.
+// tier 'always' runs in the hook AND in CI — the same gate, not two similar
+// ones. 'live' reaches the network and is never automatic.
+//
+// There was briefly a middle tier holding the secrets scan, because at 23s it
+// was too slow to put in front of every commit. That cost turned out to be
+// ~385 git process spawns rather than anything inherent; batched it runs in
+// under a second, the middle tier lost its only member, and a distinction
+// nothing justifies is a distinction that will drift.
 export const CHECKS = [
-  { name: 'unit tests', tier: 'fast', argv: ['--test'] },
-  { name: 'task board in sync', tier: 'fast', argv: ['scripts/generate.mjs', '--check'] },
-  { name: 'script versions stamped', tier: 'fast', argv: ['scripts/stamp-assets.mjs', '--check'] },
-  { name: 'scripts parse', tier: 'fast', syntax: true },
-  { name: 'no secrets (tree + history)', tier: 'full', argv: ['scripts/scan-secrets.mjs'] },
+  { name: 'unit tests', tier: 'always', argv: ['--test'] },
+  { name: 'task board in sync', tier: 'always', argv: ['scripts/generate.mjs', '--check'] },
+  { name: 'script versions stamped', tier: 'always', argv: ['scripts/stamp-assets.mjs', '--check'] },
+  { name: 'scripts parse', tier: 'always', syntax: true },
+  { name: 'no secrets (tree + history)', tier: 'always', argv: ['scripts/scan-secrets.mjs'] },
   { name: 'production matches the repo', tier: 'live', argv: ['scripts/check-deployed.mjs'] },
   { name: 'oracle contract holds', tier: 'live', argv: ['scripts/check-oracle.mjs'] },
 ];
 
 export function selectChecks(tier) {
-  if (tier === 'fast') return CHECKS.filter((c) => c.tier === 'fast');
-  if (tier === 'live') return CHECKS;
-  return CHECKS.filter((c) => c.tier !== 'live');
+  return tier === 'live' ? CHECKS : CHECKS.filter((c) => c.tier !== 'live');
 }
 
 function run(check) {
@@ -82,11 +85,7 @@ function run(check) {
 function main(argv) {
   const { help, flags } = parseArgs(argv, SPEC);
   if (help) showHelp(SPEC);
-  if (flags.has('--fast') && flags.has('--live')) {
-    console.error('\n  ✗ --fast and --live ask for opposite things.\n');
-    process.exit(2);
-  }
-  const tier = flags.has('--fast') ? 'fast' : flags.has('--live') ? 'live' : 'full';
+  const tier = flags.has('--live') ? 'live' : 'always';
   const checks = selectChecks(tier);
 
   console.log('');
@@ -100,7 +99,7 @@ function main(argv) {
 
   const failed = results.filter((r) => !r.ok);
   const skipped = CHECKS.length - checks.length;
-  if (skipped) console.log(`\n  ${skipped} check(s) not in the '${tier}' tier were skipped.`);
+  if (skipped) console.log(`\n  ${skipped} network check(s) skipped — add --live to run them.`);
   console.log(failed.length
     ? `\n  ${failed.length} of ${results.length} checks failed.\n`
     : `\n  All ${results.length} checks passed.\n`);

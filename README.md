@@ -94,10 +94,10 @@ syntax, and a secrets scan over the tree and all history:
 node scripts/checks.mjs
 ```
 
-This is the *only* definition of the gate: CI and the pre-commit hook both invoke it rather than
-keeping their own lists, because when they kept their own lists the three drifted and the check none
-of them shared is the one that broke. The hook runs `--fast` (about two seconds); CI runs the full
-set including the history scan.
+This is the *only* definition of the gate, and the pre-commit hook and CI run this exact command —
+not similar ones. When each kept its own list, the three drifted, and the check none of them shared
+is the one that quietly broke. The whole set takes about three seconds, including a scan of every
+blob in git history, so nothing is deferred to push time.
 
 Add `--live` to also check that production is running this repo and that the oracle still publishes
 what the page reads. Every script takes `--help`, and refuses a flag it doesn't recognise rather
