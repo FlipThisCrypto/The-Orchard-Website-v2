@@ -182,6 +182,37 @@
     return { shown, matched: matched.length, total: all.length, truncated: matched.length > shown.length, note };
   }
 
+  // ---- Globe degradation ladder -------------------------------------------
+  // performance-budget.md: cap the visible instanced/animated count and shed
+  // the pulses first. Every Tree still gets a point — only the animated ring
+  // layer is bounded, because that is the part whose cost is per-Tree per-frame.
+  const RING_CAP = 250;
+
+  /**
+   * Which Trees pulse. Liveness first (healthy, then idle, then offline) so the
+   * signal the pulse carries — "this network is alive" — survives the cap.
+   */
+  function ringSet(trees, cap = RING_CAP) {
+    const all = Array.isArray(trees) ? trees : [];
+    if (all.length <= cap) return { rings: all, capped: false, note: '' };
+    // One pass into liveness buckets rather than sorting the whole network:
+    // this runs on every refresh, and at 20,000 Trees a sort cost ~30 ms of
+    // main thread for an answer that only needs the first `cap` entries.
+    const healthy = [], idle = [], rest = [];
+    for (const p of all) {
+      const bucket = p && p.state === 'healthy' ? healthy : (p && p.state === 'idle' ? idle : rest);
+      if (bucket.length < cap) bucket.push(p);           // never collect more than we can use
+      if (healthy.length >= cap) break;                  // healthy alone already fills it
+    }
+    const rings = healthy.concat(idle, rest).slice(0, cap);   // input order within each bucket
+    return {
+      rings,
+      capped: true,
+      note: `Every Tree is on the globe; the pulse is shown for ${cap.toLocaleString('en-US')} of ` +
+        `${all.length.toLocaleString('en-US')} to keep it smooth.`,
+    };
+  }
+
   // ---- Text for assistive tech --------------------------------------------
   // The globe is a canvas: it cannot describe itself. These build the text
   // that the Tree list, the no-WebGL fallback and the live region all use, so
@@ -213,5 +244,6 @@
     STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
     normalizeNodes, normalizeStats, lookup,
     LIST_CAP, matchesQuery, listView,
+    RING_CAP, ringSet,
   };
 });

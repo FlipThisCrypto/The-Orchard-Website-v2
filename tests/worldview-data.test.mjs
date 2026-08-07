@@ -400,3 +400,66 @@ test('listView tolerates a non-array input', () => {
     assert.equal(out.total, 0);
   }
 });
+
+// ---------------------------------------------------------------------------
+// ringSet — the globe's degradation ladder. Every Tree keeps its point; only
+// the per-Tree-per-frame pulse is bounded, and the cap is never silent.
+// ---------------------------------------------------------------------------
+const { ringSet, RING_CAP } = OrchardData;
+
+test('the animated layer is bounded however many Trees exist', () => {
+  for (const n of [0, 1, RING_CAP - 1, RING_CAP, RING_CAP + 1, 20000, 100000]) {
+    const { rings } = ringSet(many(n));
+    assert.ok(rings.length <= RING_CAP, `${n} Trees produced ${rings.length} rings`);
+    assert.equal(rings.length, Math.min(n, RING_CAP));
+  }
+});
+
+test('below the cap nothing is dropped and nothing is claimed', () => {
+  const { rings, capped, note } = ringSet(many(4));
+  assert.equal(rings.length, 4);
+  assert.equal(capped, false);
+  assert.equal(note, '');
+});
+
+test('above the cap it says so, with both real numbers', () => {
+  const { capped, note } = ringSet(many(20000));
+  assert.equal(capped, true);
+  assert.match(note, /Every Tree is on the globe/);
+  assert.match(note, /250 of 20,000/);
+});
+
+test('liveness survives the cap: healthy Trees pulse before offline ones', () => {
+  const trees = [
+    ...Array.from({ length: 300 }, (_, i) => tree(i, { state: 'offline', id: 'OFF' + i })),
+    ...Array.from({ length: 10 }, (_, i) => tree(i, { state: 'healthy', id: 'OK' + i })),
+    ...Array.from({ length: 10 }, (_, i) => tree(i, { state: 'idle', id: 'IDLE' + i })),
+  ];
+  const { rings } = ringSet(trees);
+  assert.equal(rings.length, RING_CAP);
+  assert.equal(rings.filter((p) => p.state === 'healthy').length, 10, 'every healthy Tree should pulse');
+  assert.equal(rings.filter((p) => p.state === 'idle').length, 10, 'idle Trees come next');
+  assert.ok(rings.slice(0, 10).every((p) => p.state === 'healthy'));
+});
+
+test('ring selection is stable, so a refresh does not reshuffle the pulses', () => {
+  const trees = many(1000);
+  const a = ringSet(trees).rings.map((p) => p.id);
+  const b = ringSet(trees).rings.map((p) => p.id);
+  assert.deepEqual(a, b);
+});
+
+test('ringSet never mutates the input order', () => {
+  const trees = many(500);
+  const ids = trees.map((t) => t.id);
+  ringSet(trees);
+  assert.deepEqual(trees.map((t) => t.id), ids);
+});
+
+test('ringSet tolerates junk input and an unknown state', () => {
+  for (const v of [null, undefined, 'x', 42, {}]) assert.deepEqual(ringSet(v).rings, []);
+  const odd = Array.from({ length: 300 }, (_, i) => tree(i, { state: i ? 'who-knows' : 'healthy' }));
+  const { rings } = ringSet(odd);
+  assert.equal(rings.length, RING_CAP);
+  assert.equal(rings[0].state, 'healthy');    // known-live still wins over unknown
+});

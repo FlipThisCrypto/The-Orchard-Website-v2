@@ -59,6 +59,9 @@ against the **hard rule** rather than the full table:
 | Texture | < 256 KB | ❌ **597 KB** `earth-night.jpg` |
 | Save-Data / low memory / low cores | start light, offer opt-in | ✅ shows "Load the globe" instead of auto-downloading (force with `?low=1`) |
 | No WebGL | 2D fallback, same data | ✅ and the engine is never requested |
+| Cap the animated count | ≤ 2–5k, shed pulses first | ✅ pulses capped at 250, liveness-first, cap stated on screen |
+| Memory on the globe route | < 300 MB | ✅ measured 93–122 MB at 20,000 Trees (was 173 MB uncapped) |
+| Recover from a lost GPU context | keep the page useful | ✅ detected, explained, rebuilt with the camera preserved |
 
 The two ❌ rows are the vendored library itself: hitting them needs the planned deck.gl/MapLibre
 split with three.js dynamically imported for deep zoom only, plus a compressed texture — a Phase 3
