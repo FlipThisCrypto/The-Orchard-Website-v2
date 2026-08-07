@@ -75,10 +75,16 @@ Anything a Tree reports — `node_id`, `geohash`, sensor names, `fw_version`, `p
   is a click away from a wallet prompt the visitor didn't mean to trigger.
 - **CSP `object-src 'none'`, `base-uri 'self'`, `form-action 'none'`** — removes the usual ways an
   injection gets amplified (plugin execution, `<base>` hijacking of every relative URL, silent form
-  exfiltration). A strict `script-src` ships **report-only**: the page's own scripts are external
-  now, but the wallet widget dynamically imports WalletConnect from `esm.sh` at click time and that
-  flow can't be exercised from this repo. Connect a wallet once, check the console for violations,
-  then promote the `Content-Security-Policy-Report-Only` line in `worldview/_headers` to enforcing.
+  exfiltration).
+- **CSP `script-src` is enforced**, with no `'unsafe-inline'`. Script may come only from this
+  origin, from `oracle.theorchard.network` (the Connect Wallet widget), from `esm.sh` (which that
+  widget dynamically imports WalletConnect from at click time — verified by reading the deployed
+  widget), and from inline scripts whose **sha256 is in the policy**. Static hosting can't mint a
+  per-request nonce, so the hash is derived from the page by `scripts/csp.mjs` and re-checked by
+  the same gate that runs the tests — a hand-written hash would go stale and block the page's own
+  boot script. Measured, not assumed: an injected inline script *runs* under the old report-only
+  policy and is *blocked* under this one. `scripts/serve.mjs` serves the site locally with these
+  exact headers so the policy is testable before it ships.
 - **`Permissions-Policy: geolocation=()`** — the page cannot ask the browser for a location at all,
   which makes the coarse-location promise structural rather than a code convention.
 - **`nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `COOP: same-origin-allow-popups`.**

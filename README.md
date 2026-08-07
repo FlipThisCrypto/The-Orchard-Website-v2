@@ -122,6 +122,17 @@ performs: an oracle that answers every request with a perfect shape and *stopped
 Every script takes `--help`, and refuses a flag it doesn't recognise rather than silently doing its
 default thing.
 
+To see the site exactly as production serves it — response headers included, which
+`python -m http.server` does not send:
+
+```bash
+node scripts/serve.mjs
+```
+
+That matters because `script-src` is **enforced** on worldview, with no `'unsafe-inline'`. Inline
+script is allowed by sha256 hash, derived from the page by `scripts/csp.mjs` and re-checked by the
+gate; a hand-written hash would go stale and the browser would block the page's own boot script.
+
 Just the tests — zero dependencies, Node's built-in runner, no install step:
 
 ```bash

@@ -11,16 +11,20 @@
   # a third party who can overlay it and harvest the click. First-party
   # embedding (theorchard.network and its subdomains) is still allowed.
   X-Frame-Options: SAMEORIGIN
-  Content-Security-Policy: frame-ancestors 'self' https://theorchard.network https://*.theorchard.network; object-src 'none'; base-uri 'self'; form-action 'none'
-  # script-src is REPORT-ONLY, and enforces nothing. The page's own scripts are
-  # now external (app.js, orchard-data.js) so a strict policy is finally
-  # possible, but connect.js dynamically imports WalletConnect from esm.sh at
-  # click time and that flow can't be exercised from this repo. Report-only
-  # collects the real violations — connect a wallet once, read the console,
-  # then move this line to Content-Security-Policy to enforce it.
-  # 'unsafe-inline' covers only the boot error boundary, which must be inline
-  # to run before the scripts it guards.
-  Content-Security-Policy-Report-Only: script-src 'self' 'unsafe-inline' https://oracle.theorchard.network https://esm.sh; object-src 'none'; base-uri 'self'
+  Content-Security-Policy: frame-ancestors 'self' https://theorchard.network https://*.theorchard.network; object-src 'none'; base-uri 'self'; form-action 'none'; script-src 'self' https://oracle.theorchard.network https://esm.sh 'sha256-UxvLkQbEJoSFEwy4qRJdb57u7zhybimj0zf3HiQqih8='
+  # script-src is now ENFORCED, and it is on the line above — appended by
+  # scripts/csp.mjs, which derives the inline-script hash from the page. Never
+  # edit that hash by hand; a wrong one blocks the page's own boot script.
+  #
+  # It was report-only with 'unsafe-inline' for several iterations, which is a
+  # policy that does nothing twice over: report-only blocks nothing, and no
+  # reporting endpoint was ever configured so nothing was collected either.
+  # 'unsafe-inline' is the exact permission that makes CSP useless against
+  # injected script, which is the threat this origin actually has.
+  #
+  # esm.sh stays because connect.js dynamically imports @walletconnect/
+  # sign-client and /modal from it at click time — verified by reading the
+  # deployed widget, not assumed. Dropping it breaks connecting a wallet.
 
   # Don't let a response be re-interpreted as a type it isn't.
   X-Content-Type-Options: nosniff

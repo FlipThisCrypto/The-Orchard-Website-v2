@@ -56,6 +56,9 @@ export const CHECKS = [
   { name: 'unit tests', tier: 'always', argv: ['--test'] },
   { name: 'task board in sync', tier: 'always', argv: ['scripts/generate.mjs', '--check'] },
   { name: 'script versions stamped', tier: 'always', argv: ['scripts/stamp-assets.mjs', '--check'] },
+  // A stale hash here doesn't degrade anything — the browser refuses to run
+  // the page's own boot script. It has to be caught before the commit.
+  { name: 'CSP covers inline script', tier: 'always', argv: ['scripts/csp.mjs', '--check'] },
   { name: 'scripts parse', tier: 'always', syntax: true },
   { name: 'no secrets (tree + history)', tier: 'always', argv: ['scripts/scan-secrets.mjs'] },
   { name: 'production matches the repo', tier: 'live', argv: ['scripts/check-deployed.mjs'] },

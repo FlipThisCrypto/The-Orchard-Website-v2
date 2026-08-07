@@ -1,0 +1,18 @@
+# Line endings are part of the bytes, and this repo hashes bytes.
+#
+# Two things depend on a file having the SAME contents everywhere: the `?v=`
+# script versions (scripts/stamp-assets.mjs) and the CSP inline-script hashes
+# (scripts/csp.mjs). A browser hashes exactly what was served; if a Windows
+# checkout produced CRLF while CI computed LF, the versions would disagree and
+# the enforced CSP would block the page's own boot script.
+#
+# Today's tree is LF only by luck — the files were written that way and git
+# hasn't re-checked them out. With core.autocrlf=true and no rules here, a
+# fresh clone on Windows would convert them and both hashes would break, on
+# someone else's machine, for reasons that look like nonsense.
+* text=auto eol=lf
+
+# Binary: never touch these.
+*.jpg binary
+*.png binary
+*.ico binary
