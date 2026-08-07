@@ -34,16 +34,22 @@ const ORACLE = "https://oracle.theorchard.network";
   // precision, so it is safe to write by hand in a way a coordinate is not.
   const CELL_NAMES = { dng01: "Shepherdsville, KY", dng04: "Shepherdsville, KY" };
   const cellLabel = (gh) => (CELL_NAMES[gh] ? CELL_NAMES[gh] + " · " : "") + "~5 km cell " + gh;
-  // Real-data snapshot, captured from the live oracle on 2026-08-07 — used only
-  // when the live fetch
-  // is blocked (e.g., previewing off an *.theorchard.network origin / offline).
+  // The offline fallback: what the page shows when the oracle can't be reached
+  // (an outage, or previewing off an *.theorchard.network origin).
+  //
+  // Written by scripts/snapshot.mjs — never by hand. It carries its capture
+  // time because the page displays it: "snapshot · 3h ago" is honest, bare
+  // "snapshot" beside a hard number is not, and this is the path a visitor
+  // lands on precisely when things are broken. `node scripts/snapshot.mjs
+  // --check` fails the build once it rots.
+  const SNAPSHOT_CAPTURED_AT = "2026-08-07T15:27:45.659Z";
   const SNAPSHOT_NODES = [
-    {"node_id":"7DD309EE736A19EA19E6ABF9C5172528","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-07-26T23:47:51.359575","last_reading_at":"2026-07-26T23:47:51.359575"},
-    {"node_id":"0C59BF4E1F5B815E08AC3D7669593A5E","sensors":["ds18b20","gps"],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-07-26T13:46:01.121846","last_reading_at":"2026-07-26T13:46:01.121846"},
-    {"node_id":"D65F96E44E0EB1CB21F2C01B8C7C89D4","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-08-07T11:31:46.816691","last_reading_at":"2026-08-07T11:31:46.816691"},
-    {"node_id":"F04EC2E3B76077374BE9142CF91D2CE9","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-08-07T11:31:45.260403","last_reading_at":"2026-08-07T11:31:45.260403"}
+    {"node_id":"7DD309EE736A19EA19E6ABF9C5172528","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-07-26T23:47:51.359575","last_reading_at":"2026-07-26T23:47:51.359575","pass_verified_at":"2026-06-16T22:08:52.413084","registered_at":"2026-06-16T22:08:52.083860","label":null},
+    {"node_id":"0C59BF4E1F5B815E08AC3D7669593A5E","sensors":["ds18b20","gps"],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-07-26T13:46:01.121846","last_reading_at":"2026-07-26T13:46:01.121846","pass_verified_at":"2026-06-16T09:11:06.411151","registered_at":"2026-06-16T09:11:04.370897","label":null},
+    {"node_id":"D65F96E44E0EB1CB21F2C01B8C7C89D4","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-08-07T15:17:10.119722","last_reading_at":"2026-08-07T15:17:10.119722","pass_verified_at":"2026-06-16T09:09:18.689447","registered_at":"2026-06-16T09:09:17.128684","label":null},
+    {"node_id":"F04EC2E3B76077374BE9142CF91D2CE9","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-08-07T15:17:20.192656","last_reading_at":"2026-08-07T15:17:20.192656","pass_verified_at":"2026-06-16T09:05:36.780324","registered_at":"2026-06-16T09:05:36.198748","label":null}
   ];
-  const SNAPSHOT_STATS = {"trees_registered":4,"trees_active_24h":2,"readings_total":216350,"readings_last_24h":2839,"attestations_total":0,"current_season":73,"as_of_utc":"2026-08-07T11:32:41.533962+00:00"};
+  const SNAPSHOT_STATS = {"trees_registered":4,"trees_active_24h":2,"readings_total":216725,"readings_last_24h":2744,"attestations_total":0,"current_season":73,"as_of_utc":"2026-08-07T15:28:35.033228+00:00"};
   // Live, not latched: someone who turns the preference on mid-session should
   // get a still globe from the next refresh, not on their next visit.
   const motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
@@ -143,7 +149,9 @@ const ORACLE = "https://oracle.theorchard.network";
     $("s-attest").textContent   = showCount(S.attestations_total) + " attestations";
     $("s-located").textContent = pts.length;
     $("livedot").className = "dot" + (live?" on":"");
-    $("livetxt").textContent = live ? "live" : "snapshot";
+    // "snapshot" alone, printed beside 216,350 all-time readings, invites a
+    // visitor to read a stored number as a current one. Say how old it is.
+    $("livetxt").textContent = live ? "live" : ("snapshot · " + ago(SNAPSHOT_CAPTURED_AT, Date.now()));
     // Health and data composition, shown separately — never blended.
     const comp = composition(pts);
     $("comp-health").innerHTML = pts.length

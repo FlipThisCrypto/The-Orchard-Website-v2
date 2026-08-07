@@ -160,6 +160,16 @@ anything newly published that the page could be using:
 node scripts/check-oracle.mjs
 ```
 
+When the oracle can't be reached, the page falls back to a committed snapshot — and says how old it
+is, because "snapshot" printed beside a hard number invites reading a stored figure as a current one.
+Refresh it (keeps only contract fields, never `wallet_address`):
+
+```bash
+node scripts/snapshot.mjs
+```
+
+The gate fails once that capture passes 45 days: a fallback nobody refreshes is a fallback that lies.
+
 And to re-verify SECURITY.md's "no secrets" guarantee over every file that could reach a commit and
 all of git history (CI runs this too, so it can't quietly rot):
 

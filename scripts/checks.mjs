@@ -61,6 +61,9 @@ export const CHECKS = [
   { name: 'CSP covers inline script', tier: 'always', argv: ['scripts/csp.mjs', '--check'] },
   { name: 'scripts parse', tier: 'always', syntax: true },
   { name: 'no secrets (tree + history)', tier: 'always', argv: ['scripts/scan-secrets.mjs'] },
+  // Reads only the committed capture date — no network, so it belongs here
+  // rather than with the live checks.
+  { name: 'offline snapshot is fresh', tier: 'always', argv: ['scripts/snapshot.mjs', '--check'] },
   { name: 'production matches the repo', tier: 'live', argv: ['scripts/check-deployed.mjs'] },
   { name: 'oracle contract holds', tier: 'live', argv: ['scripts/check-oracle.mjs'] },
 ];
