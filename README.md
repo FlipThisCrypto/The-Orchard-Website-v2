@@ -16,7 +16,10 @@ hallucinating, or drifting out of scope. If that part interests you, read
 > Next: Phase 2 (the production build). The live v1 site is separate and untouched.
 
 ## See it live
-- 🌍 **Globe proof-of-concept** — https://flipthiscrypto.github.io/The-Orchard-Website-v2/prototypes/globe-poc/
+- 🌳 **Worldview — the live Trees globe** — https://worldview.theorchard.network/ — real nodes,
+  real readings, straight from the oracle. This is the one that matters.
+- 🌍 **Globe proof-of-concept** — https://flipthiscrypto.github.io/The-Orchard-Website-v2/prototypes/globe-poc/ — the
+  original throwaway prototype, on representative sample data. Superseded by Worldview.
 - 📊 **Mission-control dashboard** — https://flipthiscrypto.github.io/The-Orchard-Website-v2/dashboard/
 
 ## Start here
