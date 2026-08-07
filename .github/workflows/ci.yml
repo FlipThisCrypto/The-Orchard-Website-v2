@@ -30,6 +30,9 @@ jobs:
       - name: Task board is in sync with tasks.json
         run: node scripts/generate.mjs --check
 
+      - name: Script URLs match their file hashes
+        run: node scripts/stamp-assets.mjs --check
+
       - name: Syntax-check standalone scripts
         run: |
           set -e

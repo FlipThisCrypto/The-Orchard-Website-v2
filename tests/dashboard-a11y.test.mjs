@@ -23,7 +23,8 @@ test('the page has a main landmark', () => {
 test('the page script is external so the syntax check can see it', () => {
   // While it was inline it was the largest shipped file neither CI nor the
   // pre-commit hook could check.
-  assert.match(html, /<script src="app\.js"><\/script>/);
+  assert.match(html, /<script src="app\.js(\?v=[0-9a-f]+)?"><\/script>/,
+    'the page script must stay external (a content-hash query is expected)');
   assert.ok(app.length > 5000, 'dashboard/app.js should hold the page script');
   // The boot boundary must stay inline: it guards the scripts that follow it.
   assert.match(html, /__boardBootFailed/);

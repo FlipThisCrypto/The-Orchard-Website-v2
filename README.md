@@ -120,6 +120,13 @@ And to re-verify SECURITY.md's "no secrets" guarantee over the working tree and 
 node scripts/scan-secrets.mjs
 ```
 
+Script URLs carry a hash of their file's contents so a deploy can't leave a browser on the old
+script. It's derived, not typed — after editing any page script, run:
+
+```bash
+node scripts/stamp-assets.mjs
+```
+
 Covers the worldview data logic in [`worldview/orchard-data.js`](worldview/orchard-data.js) (fruit
 classification, node-state thresholds, geohash decoding) and the untrusted-input controls that
 `SECURITY.md` promises — escaping and Pass/geohash validation. CI runs the same command on every
