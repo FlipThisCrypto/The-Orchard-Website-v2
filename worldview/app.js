@@ -9,16 +9,31 @@
 // consumes it, and the wallet widget loads after. The boot error boundary
 // stays inline in the page because it must run before anything it guards.
 const ORACLE = "https://oracle.theorchard.network";
-  const REGION = "Shepherdsville, KY (approx.)";
-  // Operator-declared COARSE locations (the operator's Trees are around
-  // Shepherdsville, KY). Never precise GPS. Used until a node reports a live
-  // geohash from the oracle (which then takes precedence).
-  const LOCATIONS = {
-    "0C59BF4E1F5B815E08AC3D7669593A5E": { lat:37.990, lng:-85.715 },
-    "7DD309EE736A19EA19E6ABF9C5172528": { lat:38.012, lng:-85.700 },
-    "D65F96E44E0EB1CB21F2C01B8C7C89D4": { lat:37.974, lng:-85.736 },
-    "F04EC2E3B76077374BE9142CF91D2CE9": { lat:38.001, lng:-85.690 }
+  // Operator-declared COARSE locations, as geohash CELLS — never coordinates.
+  //
+  // This used to be a table of latitudes and longitudes written to three
+  // decimal places, which is about 110 m. SECURITY.md and the page itself
+  // promise "coarse (~5 km) regions, never precise GPS", and nothing in the
+  // code enforced that: a decimal degree can express any precision at all, and
+  // no check counted the decimals. Whether those four numbers were real Tree
+  // positions or hand-placed scatter, the page drew four separately-placed
+  // dots and so asserted more location detail than the contract allows. At the
+  // promised ~5 km they are two cells, not four points.
+  //
+  // A DECLARED_PRECISION-character geohash cannot carry a finer position than
+  // its cell, so over-precision is now unrepresentable rather than forbidden.
+  // The oracle's own geohash still takes precedence when it publishes one, and
+  // takes the identical code path.
+  const DECLARED_CELLS = {
+    "0C59BF4E1F5B815E08AC3D7669593A5E": "dng01",
+    "7DD309EE736A19EA19E6ABF9C5172528": "dng01",
+    "D65F96E44E0EB1CB21F2C01B8C7C89D4": "dng01",
+    "F04EC2E3B76077374BE9142CF91D2CE9": "dng04"
   };
+  // A human name for a cell, where one is known. A place name carries no
+  // precision, so it is safe to write by hand in a way a coordinate is not.
+  const CELL_NAMES = { dng01: "Shepherdsville, KY", dng04: "Shepherdsville, KY" };
+  const cellLabel = (gh) => (CELL_NAMES[gh] ? CELL_NAMES[gh] + " · " : "") + "~5 km cell " + gh;
   // Real-data snapshot, captured from the live oracle on 2026-08-07 — used only
   // when the live fetch
   // is blocked (e.g., previewing off an *.theorchard.network origin / offline).
@@ -37,7 +52,7 @@ const ORACLE = "https://oracle.theorchard.network";
     reduce = e.matches;
     if(!world) return;
     if(reduce) world.ringsData([]);        // stop the pulses immediately
-    else if(TREES.length) world.ringsData(applyRingCap(TREES));
+    else if(CELLS.length) world.ringsData(applyRingCap(CELLS));
   });
 
   // Pure data logic (classification, node state, geohash, escaping, id checks)
@@ -45,9 +60,11 @@ const ORACLE = "https://oracle.theorchard.network";
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
           networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
           listView, ringSet, legendRows, abortAfter, withDeadline, shapeFor,
-          composition, referenceNow, showCount, passEvidence, plantedFor } = window.OrchardData;
+          composition, referenceNow, showCount, passEvidence, plantedFor,
+          cellsFrom, CLUSTER_COLOR } = window.OrchardData;
   let ORACLE_NOW = Date.now();   // replaced by the oracle's as_of_utc each refresh
   let TREES = [];   // the Trees currently shown, in list order
+  let CELLS = [];   // those Trees grouped into ~5 km cells — what the globe draws
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
   const $=(id)=>document.getElementById(id);
@@ -96,14 +113,18 @@ const ORACLE = "https://oracle.theorchard.network";
     ORACLE_NOW = oracleNow;
     const pts=[];
     for(const n of nodes){
-      const gh = isGeohash(n.geohash) ? n.geohash.toLowerCase() : null;
-      const loc = (gh && ghCenter(gh)) || lookup(LOCATIONS, n.node_id) || null;
+      // The oracle's geohash wins; otherwise the operator-declared cell. Both
+      // are cells, so both resolve through the same centre — there is no
+      // longer a second, finer path for locally-declared positions.
+      const live_gh = isGeohash(n.geohash) ? n.geohash.toLowerCase() : null;
+      const gh = live_gh || lookup(DECLARED_CELLS, n.node_id) || null;
+      const loc = gh ? ghCenter(gh) : null;
       const fruits = fruitsFor(n.sensors);
       const state = stateFrom(n, oracleNow);
       const placed = !!loc;
       const node = { id:n.node_id, short:(n.node_id||"").slice(0,8),
         lat: loc?loc.lat:null, lng: loc?loc.lng:null,
-        region: gh ? ("cell "+gh) : REGION,
+        cell: gh, region: gh ? cellLabel(gh) : null,
         fruits, state, fw:n.fw_version, pass:n.pass_nft_id, last:n.last_reading_at,
         passVerifiedAt:n.pass_verified_at, registeredAt:n.registered_at, label:n.label,
         sensors:(n.sensors||[]).filter(s=>s!=="gps"),
@@ -148,8 +169,13 @@ const ORACLE = "https://oracle.theorchard.network";
     // A failure to BUILD the globe is not a failure to read the network.
     // Reporting it through the data path blamed the oracle for a browser
     // problem, and retried the same failing call every 60 seconds.
+    // The globe draws CELLS, not Trees. Trees sharing a ~5 km cell share the
+    // cell's centre — that coordinate belongs to the cell, not to any Tree —
+    // so three markers stacked on one spot would assert a precision the data
+    // doesn't have. The list below still shows every Tree individually.
+    CELLS = cellsFrom(pts);
     try {
-      if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
+      if(world) updateGlobe(CELLS); else if(typeof Globe!=="undefined") renderGlobe(CELLS);
     } catch(e) {
       globeFailed = true;
       teardownGlobe();
@@ -214,6 +240,33 @@ const ORACLE = "https://oracle.theorchard.network";
     if(!reduce) world.ringsData(applyRingCap(pts));
   }
 
+  // A cell holding several Trees is drawn a little larger — enough to read as
+  // "more than one here", not so much that it implies a bigger area.
+  function cellRadius(c){
+    const base = shapeFor(c.state).radius;
+    return c.count > 1 ? base * (1 + Math.min(0.6, Math.log2(c.count) * 0.22)) : base;
+  }
+
+  function cellTooltip(c){
+    const head = c.count > 1
+      ? `<b>${c.count} Trees</b>`
+      : `<b>${c.trees[0].label?esc(c.trees[0].label)+" · ":""}${esc(c.short)}…</b>`;
+    const body = c.count > 1
+      ? `<span style="color:#a3bcb0">somewhere in this cell — click to list them</span>`
+      : esc(c.fruits.map(f=>f.emoji+" "+f.type).join(" · ")) || "no sensors reporting";
+    return `<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3">${head}<br><span style="color:#a3bcb0">${esc(c.region)} · ${esc(shapeFor(c.state).label)}</span><br>${body}</div>`;
+  }
+
+  // One Tree in the cell opens that Tree. Several opens the list filtered to
+  // the cell — there is no honest way to pick one of three Trees that share a
+  // coordinate, because the coordinate isn't any of theirs.
+  function openCell(c){
+    if(c.count === 1){ showPanel(c.trees[0]); return; }
+    $("tl-q").value = c.cell || "";
+    renderTreeList($("tl-items"), TREES);
+    openDialog("treelist");
+  }
+
   // Every Tree keeps its point; only the per-Tree-per-frame pulse is bounded.
   function applyRingCap(pts){
     const { rings, capped, note } = ringSet(pts);
@@ -228,9 +281,9 @@ const ORACLE = "https://oracle.theorchard.network";
       // Colour carries the data class; size and height carry the state, so a
       // quiet Tree is distinguishable with no animation at all.
       .pointsData(pts).pointLat("lat").pointLng("lng").pointColor("color")
-      .pointAltitude(p=>shapeFor(p.state).altitude).pointRadius(p=>shapeFor(p.state).radius).pointResolution(18)
-      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${p.label?esc(p.label)+" · ":""}${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)} · ${esc(shapeFor(p.state).label)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</div>`)
-      .onPointClick(p=>showPanel(p));   // globe.gl passes (point, event) — don't leak the event in as an opener
+      .pointAltitude(p=>shapeFor(p.state).altitude).pointRadius(p=>cellRadius(p)).pointResolution(18)
+      .pointLabel(p=>cellTooltip(p))
+      .onPointClick(p=>openCell(p));   // globe.gl passes (point, event) — don't leak the event in as an opener
     if(!reduce){ world.ringsData(applyRingCap(pts)).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
     const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
     if(!resizeBound){ addEventListener("resize",()=>world && world.width(innerWidth).height(innerHeight)); resizeBound=true; }
@@ -273,7 +326,7 @@ const ORACLE = "https://oracle.theorchard.network";
     contextLost = false;
     note("");
     $("loadglobe").hidden = true;
-    if(webglOK() && typeof Globe!=="undefined") renderGlobe(TREES, pov);
+    if(webglOK() && typeof Globe!=="undefined") renderGlobe(CELLS, pov);
     else note("The 3D globe can't start again in this browser — every Tree is still listed above.");
   }
 
@@ -408,7 +461,7 @@ const ORACLE = "https://oracle.theorchard.network";
     note("Loading the globe…");
     return loadEngine().then(()=>{
       note("");
-      if(webglOK() && !world && TREES.length) renderGlobe(TREES);
+      if(webglOK() && !world && CELLS.length) renderGlobe(CELLS);
     }).catch(()=>{
       note("The 3D globe couldn't load — every Tree is still listed above.");
     });

@@ -27,7 +27,14 @@ and credit you if you'd like. This is a pre-alpha, community project — please 
   on-chain identifiers it finds — the public Orchard Pass NFT and the $JUICE asset id — are cited
   on purpose and allowlisted.
 - ✅ **No precise locations.** Tree positions are shown only as **coarse (~5 km) regions / geohash
-  cells**, never precise GPS. The PoC's sample coordinates are region-level and representative.
+  cells**, never precise GPS — and this is now structural rather than careful. Declared locations
+  are stored as **5-character geohash cells**, so a position finer than ~4.9 km is *unrepresentable*;
+  display coordinates come from the cell's centre, which is the same point for every Tree in the
+  cell and therefore reveals nothing about which part of it a Tree is in. `tests/location-precision.test.mjs`
+  fails if a coordinate literal or a finer cell reappears. It replaced a hand-typed latitude/longitude
+  table written to three decimals (~110 m) that nothing checked — at the promised resolution its four
+  points are two cells, so the globe now draws two markers with counts instead of four separately
+  placed dots. The PoC's sample coordinates are region-level and representative.
 - ✅ **No privileged endpoints or internals** that would aid an attack. Public service URLs
   referenced here are the same ones already linked from the live site.
 

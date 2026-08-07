@@ -380,6 +380,57 @@
   // layer is bounded, because that is the part whose cost is per-Tree per-frame.
   const RING_CAP = 250;
 
+  // How coarse a declared location is allowed to be, in geohash characters.
+  // 5 characters is a ~4.9 km × 4.9 km cell, which is what the privacy contract
+  // in SECURITY.md means by "coarse (~5 km) regions, never precise GPS".
+  //
+  // This is the whole reason locations are stored as geohashes and not as
+  // latitude/longitude: a cell length cannot express a position finer than its
+  // cell, whereas a decimal degree can express anything and nothing checks how
+  // many decimals someone typed. Over-precision becomes unrepresentable rather
+  // than merely discouraged.
+  const DECLARED_PRECISION = 5;
+
+  const CLUSTER_COLOR = '#8fd8c2';
+  // Which state speaks for a cell holding several Trees: the most alive one.
+  // A cell with one reporting Tree and two offline ones IS reporting.
+  const STATE_RANK = { healthy: 4, idle: 3, new: 2, stale: 2, ahead: 2, offline: 1 };
+
+  /**
+   * Group placed Trees by the cell they sit in. Pure.
+   *
+   * Trees in the same ~5 km cell share a coordinate, because that coordinate is
+   * the cell's centre and not any Tree's position. Drawing them as separate
+   * points would put three markers at one spot and quietly assert a precision
+   * the data does not have — so a cell is drawn once, carrying its count.
+   */
+  function cellsFrom(trees) {
+    const byCell = new Map();
+    for (const t of trees || []) {
+      if (!t || t.lat == null || t.lng == null) continue;
+      const key = t.cell || `${t.lat},${t.lng}`;
+      let cell = byCell.get(key);
+      if (!cell) {
+        cell = { key, cell: t.cell || null, region: t.region, lat: t.lat, lng: t.lng, trees: [] };
+        byCell.set(key, cell);
+      }
+      cell.trees.push(t);
+    }
+    return [...byCell.values()].map((c) => {
+      const lead = c.trees.reduce((a, b) => ((STATE_RANK[b.state] || 0) > (STATE_RANK[a.state] || 0) ? b : a));
+      const single = c.trees.length === 1;
+      return {
+        ...c,
+        count: c.trees.length,
+        state: lead.state,
+        color: single ? c.trees[0].color : CLUSTER_COLOR,
+        fruits: single ? c.trees[0].fruits : [],
+        short: single ? c.trees[0].short : `${c.trees.length} Trees`,
+        label: single ? c.trees[0].label : null,
+      };
+    });
+  }
+
   /**
    * Which Trees pulse. Liveness first (healthy, then idle, then offline) so the
    * signal the pulse carries — "this network is alive" — survives the cap.
@@ -483,5 +534,6 @@
     normalizeNodes, normalizeStats, STAT_FIELDS, showCount, lookup, abortAfter, withDeadline, parseOracleTime,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,
+    DECLARED_PRECISION, CLUSTER_COLOR, cellsFrom,
   };
 });
