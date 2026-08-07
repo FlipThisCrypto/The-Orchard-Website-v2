@@ -647,3 +647,67 @@ test('a never-reported Tree is drawn smaller than a reporting one', () => {
   assert.ok(shapeFor('new').radius < shapeFor('healthy').radius);
   assert.match(shapeFor('new').label, /no Harvest yet/);
 });
+
+// ---------------------------------------------------------------------------
+// composition — health and data shown side by side, never blended. The model's
+// rule: a Grove must not be able to look healthier than its Trees.
+// ---------------------------------------------------------------------------
+const { composition } = OrchardData;
+
+const withState = (state, fruits = []) => ({ short: 'X', region: 'r', state, fruits });
+
+test('health composition counts every state it is given', () => {
+  const c = composition([
+    withState('healthy'), withState('healthy'), withState('idle'),
+    withState('offline'), withState('new'),
+  ]);
+  assert.deepEqual(c.byState.map((s) => [s.state, s.count]), [['healthy', 2], ['idle', 1], ['new', 1], ['offline', 1]]);
+  assert.match(c.health, /^5 Trees: 2 reporting, 1 quiet for a while, 1 planted, no Harvest yet, 1 not reporting$/);
+});
+
+test('states with no Trees are omitted rather than shown as zero', () => {
+  const c = composition([withState('new'), withState('new')]);
+  assert.deepEqual(c.byState.map((s) => s.state), ['new']);
+  assert.match(c.health, /^2 Trees: 2 planted, no Harvest yet$/);
+});
+
+test('health and data are separate values, never combined into a score', () => {
+  const c = composition([withState('healthy', [{ type: 'Temperature', emoji: '🍊', color: '#ff9f2e' }])]);
+  assert.ok('byState' in c && 'byClass' in c);
+  assert.ok(!('score' in c) && !('percent' in c), 'a blended score is exactly what the model forbids');
+  assert.match(c.health, /1 reporting/);
+  assert.match(c.sensing, /Temperature \(1\)/);
+});
+
+test('data composition counts Trees per class, most common first', () => {
+  const t = (types) => withState('healthy', types.map((x) => ({ type: x, emoji: '🍊', color: '#ff9f2e' })));
+  const c = composition([t(['Temperature']), t(['Temperature', 'Humidity']), t(['Temperature'])]);
+  assert.deepEqual(c.byClass.map((x) => [x.type, x.count]), [['Temperature', 3], ['Humidity', 1]]);
+});
+
+test('an unknown state is counted, not dropped', () => {
+  // Dropping it would make the counts disagree with the number of Trees.
+  const c = composition([withState('who-knows'), withState('healthy')]);
+  assert.equal(c.byState.reduce((n, s) => n + s.count, 0), 2);
+});
+
+test('composition degrades honestly with nothing to summarise', () => {
+  for (const v of [[], null, undefined, 'x', 42]) {
+    const c = composition(v);
+    assert.deepEqual(c.byState, []);
+    assert.deepEqual(c.byClass, []);
+    assert.equal(c.health, 'No Trees on the map yet.');
+    assert.equal(c.sensing, 'No sensors reporting yet.');
+  }
+});
+
+test('every composition row carries a colour the page can render', () => {
+  const c = composition([withState('healthy'), withState('offline')]);
+  for (const s of c.byState) assert.match(s.color, /^#[0-9a-f]{6}$/i, `${s.state} has no colour`);
+});
+
+test('the composition matches what the live snapshot would show', () => {
+  // Four registered Trees, none of which has ever reported.
+  const c = composition(Array.from({ length: 4 }, () => withState('new')));
+  assert.equal(c.health, '4 Trees: 4 planted, no Harvest yet');
+});

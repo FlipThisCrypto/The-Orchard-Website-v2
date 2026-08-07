@@ -307,6 +307,39 @@
     ].filter(Boolean).join(' · ');
   }
 
+  /**
+   * Health and data composition, kept apart on purpose. The model's rule is
+   * "show both, unblended" — a single blended score is how a Grove ends up
+   * looking healthier than its Trees.
+   */
+  function composition(trees) {
+    const all = Array.isArray(trees) ? trees : [];
+    const stateOrder = ['healthy', 'idle', 'new', 'offline'];
+    const stateCount = new Map();
+    const classCount = new Map();
+    for (const p of all) {
+      const s = STATE_SHAPE[p && p.state] ? p.state : 'offline';
+      stateCount.set(s, (stateCount.get(s) || 0) + 1);
+      for (const f of (p && p.fruits) || []) {
+        const key = f.type;
+        if (!classCount.has(key)) classCount.set(key, { type: key, emoji: f.emoji, color: f.color, count: 0 });
+        classCount.get(key).count++;
+      }
+    }
+    const byState = stateOrder
+      .filter((s) => stateCount.has(s))
+      .map((s) => ({ state: s, label: STATE_SHAPE[s].label, color: STATE_COLOR[s], count: stateCount.get(s) }));
+    const byClass = [...classCount.values()].sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+
+    const health = byState.length
+      ? `${all.length} Tree${all.length === 1 ? '' : 's'}: ` + byState.map((s) => `${s.count} ${s.label}`).join(', ')
+      : 'No Trees on the map yet.';
+    const sensing = byClass.length
+      ? 'Sensing: ' + byClass.map((c) => `${c.type} (${c.count})`).join(', ')
+      : 'No sensors reporting yet.';
+    return { byState, byClass, health, sensing };
+  }
+
   function networkSummary(stats, placed, live) {
     const trees = stats && stats.trees_registered != null ? stats.trees_registered : placed;
     // An unknown count is reported as unknown. Saying "0 harvested readings"
@@ -320,7 +353,7 @@
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
-    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, ago, treeSummary, networkSummary,
+    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, ago, treeSummary, networkSummary, composition,
     normalizeNodes, normalizeStats, lookup, abortAfter, withDeadline,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,
