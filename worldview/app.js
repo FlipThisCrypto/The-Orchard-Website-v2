@@ -19,15 +19,16 @@ const ORACLE = "https://oracle.theorchard.network";
     "D65F96E44E0EB1CB21F2C01B8C7C89D4": { lat:37.974, lng:-85.736 },
     "F04EC2E3B76077374BE9142CF91D2CE9": { lat:38.001, lng:-85.690 }
   };
-  // Real-data snapshot (from the live oracle) — used only when the live fetch
+  // Real-data snapshot, captured from the live oracle on 2026-08-07 — used only
+  // when the live fetch
   // is blocked (e.g., previewing off an *.theorchard.network origin / offline).
   const SNAPSHOT_NODES = [
-    { node_id:"0C59BF4E1F5B815E08AC3D7669593A5E", sensors:["ds18b20","gps"], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
-    { node_id:"7DD309EE736A19EA19E6ABF9C5172528", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
-    { node_id:"D65F96E44E0EB1CB21F2C01B8C7C89D4", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null },
-    { node_id:"F04EC2E3B76077374BE9142CF91D2CE9", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null }
+    {"node_id":"7DD309EE736A19EA19E6ABF9C5172528","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-07-26T23:47:51.359575","last_reading_at":"2026-07-26T23:47:51.359575"},
+    {"node_id":"0C59BF4E1F5B815E08AC3D7669593A5E","sensors":["ds18b20","gps"],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-07-26T13:46:01.121846","last_reading_at":"2026-07-26T13:46:01.121846"},
+    {"node_id":"D65F96E44E0EB1CB21F2C01B8C7C89D4","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-08-07T11:31:46.816691","last_reading_at":"2026-08-07T11:31:46.816691"},
+    {"node_id":"F04EC2E3B76077374BE9142CF91D2CE9","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","last_seen_at":"2026-08-07T11:31:45.260403","last_reading_at":"2026-08-07T11:31:45.260403"}
   ];
-  const SNAPSHOT_STATS = { trees_registered:4, readings_total:11605 };
+  const SNAPSHOT_STATS = {"trees_registered":4,"trees_active_24h":2,"readings_total":216350,"readings_last_24h":2839,"attestations_total":0,"current_season":73,"as_of_utc":"2026-08-07T11:32:41.533962+00:00"};
   // Live, not latched: someone who turns the preference on mid-session should
   // get a still globe from the next refresh, not on their next visit.
   const motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
@@ -44,7 +45,7 @@ const ORACLE = "https://oracle.theorchard.network";
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
           networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
           listView, ringSet, legendRows, abortAfter, withDeadline, shapeFor,
-          composition, referenceNow } = window.OrchardData;
+          composition, referenceNow, showCount } = window.OrchardData;
   let ORACLE_NOW = Date.now();   // replaced by the oracle's as_of_utc each refresh
   let TREES = [];   // the Trees currently shown, in list order
 
@@ -109,9 +110,15 @@ const ORACLE = "https://oracle.theorchard.network";
       if(placed) pts.push(node);
     }
 
-    // Unknown is shown as unknown — never as a confident zero.
-    $("s-trees").textContent = stats && stats.trees_registered != null ? stats.trees_registered : nodes.length;
-    $("s-readings").textContent = stats && stats.readings_total != null ? stats.readings_total.toLocaleString() : "—";
+    // Unknown is shown as unknown — never as a confident zero. Activity
+    // leads; the lifetime totals sit underneath as context.
+    const S = stats || {};
+    $("s-active").textContent   = showCount(S.trees_active_24h);
+    $("s-trees").textContent    = "of " + showCount(S.trees_registered != null ? S.trees_registered : nodes.length) + " planted";
+    $("s-today").textContent    = showCount(S.readings_last_24h);
+    $("s-readings").textContent = showCount(S.readings_total) + " all time";
+    $("s-season").textContent   = S.current_season != null ? "#" + S.current_season : "—";
+    $("s-attest").textContent   = showCount(S.attestations_total) + " attestations";
     $("s-located").textContent = pts.length;
     $("livedot").className = "dot" + (live?" on":"");
     $("livetxt").textContent = live ? "live" : "snapshot";

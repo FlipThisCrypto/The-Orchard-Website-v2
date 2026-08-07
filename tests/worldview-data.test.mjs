@@ -244,21 +244,6 @@ test('treeSummary never returns an empty label', () => {
   }
 });
 
-test('networkSummary reads as a sentence and distinguishes live from snapshot', () => {
-  assert.equal(
-    networkSummary({ trees_registered: 4, readings_total: 11605 }, 4, true),
-    '4 Trees, 11,605 harvested readings, 4 shown on the map. Data is live.'
-  );
-  assert.match(networkSummary({ trees_registered: 4, readings_total: 0 }, 2, false), /snapshot\.$/);
-});
-
-test('networkSummary falls back to the placed count when stats are missing', () => {
-  // Missing counts read as unknown — claiming "0 harvested readings" when the
-  // oracle never said so would be a confident falsehood.
-  assert.equal(networkSummary(null, 3, true), '3 Trees, an unknown number of harvested readings, 3 shown on the map. Data is live.');
-  assert.equal(networkSummary({}, 0, false), '0 Trees, an unknown number of harvested readings, 0 shown on the map. Data is from a snapshot.');
-});
-
 // ---------------------------------------------------------------------------
 // Response shape validation — HTTP 200 is not a promise about the body.
 // These are the payloads that used to throw inside the refresh loop while the
@@ -307,15 +292,11 @@ test('normalizeStats returns null rather than inventing numbers', () => {
 });
 
 test('normalizeStats keeps the counts it can trust and nulls the rest', () => {
-  assert.deepEqual(normalizeStats({ trees_registered: 4, readings_total: 11605 }), { trees_registered: 4, readings_total: 11605 });
-  assert.deepEqual(normalizeStats({ trees_registered: 4, readings_total: 'lots' }), { trees_registered: 4, readings_total: null });
-  assert.deepEqual(normalizeStats({ readings_total: 10.9 }), { trees_registered: null, readings_total: 10 });
-});
-
-test('an unknown reading count is reported as unknown, not as zero', () => {
-  assert.match(networkSummary({ trees_registered: 4, readings_total: null }, 4, true), /unknown number of harvested readings/);
-  assert.match(networkSummary(null, 3, false), /unknown number of harvested readings/);
-  assert.match(networkSummary({ trees_registered: 4, readings_total: 0 }, 4, true), /0 harvested readings/);
+  const out = normalizeStats({ trees_registered: 4, readings_total: 'lots', readings_last_24h: 10.9 });
+  assert.equal(out.trees_registered, 4);
+  assert.equal(out.readings_total, null, 'a non-number is not a count');
+  assert.equal(out.readings_last_24h, 10, 'fractional counts are floored');
+  assert.equal(out.trees_active_24h, null, 'a field the oracle omitted stays unknown');
 });
 
 test('lookup cannot be walked into Object.prototype', () => {
@@ -819,4 +800,61 @@ test('normalizeNodes carries every field the state model reads', () => {
   const now = Date.parse('2026-08-07T11:30:00Z');
   assert.equal(stateFrom(n, now), stateFrom(raw, now));
   assert.equal(stateFrom(n, now), 'stale');
+});
+
+// ---------------------------------------------------------------------------
+// Activity over totals. A registered-Tree count and a lifetime reading total
+// can only ever go up; they cannot show a network stalling.
+// ---------------------------------------------------------------------------
+const { STAT_FIELDS, showCount } = OrchardData;
+
+const FULL_STATS = {
+  trees_registered: 4, trees_active_24h: 2,
+  readings_total: 216346, readings_last_24h: 2840,
+  attestations_total: 0, current_season: 73,
+  as_of_utc: '2026-08-07T11:30:14.598152+00:00',
+};
+
+test('normalizeStats carries every field the page reads', () => {
+  const out = normalizeStats(FULL_STATS);
+  for (const f of STAT_FIELDS) assert.equal(out[f], FULL_STATS[f], `normalizeStats dropped ${f}`);
+  assert.equal(out.as_of_utc, FULL_STATS.as_of_utc, 'the oracle clock must survive normalisation');
+});
+
+test('a zero count is preserved, not treated as missing', () => {
+  // attestations_total is genuinely 0 today; showing "—" would hide a real fact.
+  const out = normalizeStats({ ...FULL_STATS, attestations_total: 0, readings_last_24h: 0 });
+  assert.equal(out.attestations_total, 0);
+  assert.equal(out.readings_last_24h, 0);
+  assert.equal(showCount(0), '0');
+});
+
+test('a missing count is unknown, not zero', () => {
+  const out = normalizeStats({ trees_registered: 4 });
+  assert.equal(out.trees_active_24h, null);
+  assert.equal(showCount(out.trees_active_24h), '—');
+  assert.equal(showCount(undefined), '—');
+});
+
+test('showCount groups thousands so big numbers stay readable', () => {
+  assert.equal(showCount(216346), '216,346');
+  assert.equal(showCount(2840), '2,840');
+});
+
+test('the spoken summary leads with activity, not with lifetime totals', () => {
+  const s = networkSummary(normalizeStats(FULL_STATS), 4, true);
+  assert.match(s, /^2 of 4 Trees reported in the last day/);
+  assert.match(s, /2,840 readings harvested today/);
+  assert.match(s, /216,346 all time/);
+  assert.match(s, /Season 73/);
+  assert.match(s, /0 on-chain attestations/);
+  assert.match(s, /Data is live\.$/);
+});
+
+test('the summary degrades honestly when the oracle says less', () => {
+  assert.match(networkSummary(null, 3, false), /^3 Trees, an unknown number of harvested readings/);
+  assert.match(networkSummary(null, 3, false), /Data is from a snapshot\.$/);
+  const partial = networkSummary(normalizeStats({ trees_registered: 9 }), 9, true);
+  assert.match(partial, /^9 Trees, an unknown number/);
+  assert.ok(!/Season/.test(partial), 'must not invent a Season it was not told');
 });

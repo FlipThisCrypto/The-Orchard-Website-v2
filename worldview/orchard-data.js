@@ -251,15 +251,29 @@
     return out;
   }
 
-  /** Counts only. A missing/!finite count stays null so the UI can say "unknown". */
+  /**
+   * Counts only. A missing/!finite count stays null so the UI can say
+   * "unknown" rather than a confident zero. Every field the UI reads must be
+   * listed here — a whitelist that omits one silently starves the page (that
+   * is how the heartbeat went missing in iteration 31).
+   */
+  const STAT_FIELDS = [
+    'trees_registered', 'trees_active_24h',
+    'readings_total', 'readings_last_24h',
+    'attestations_total', 'current_season',
+  ];
   function normalizeStats(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
     const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
-    const trees = num(raw.trees_registered);
-    const readings = num(raw.readings_total);
-    if (trees === null && readings === null) return null;   // nothing usable in here
-    return { trees_registered: trees, readings_total: readings };
+    const out = {};
+    for (const f of STAT_FIELDS) out[f] = num(raw[f]);
+    if (STAT_FIELDS.every((f) => out[f] === null)) return null;   // nothing usable in here
+    out.as_of_utc = typeof raw.as_of_utc === 'string' ? raw.as_of_utc : null;
+    return out;
   }
+
+  /** A count for display: the number, or an honest "—" when we weren't told. */
+  const showCount = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US'));
 
   /** Own-property lookup: a node_id of "__proto__" must not reach Object.prototype. */
   function lookup(map, key) {
@@ -390,20 +404,28 @@
   }
 
   function networkSummary(stats, placed, live) {
-    const trees = stats && stats.trees_registered != null ? stats.trees_registered : placed;
-    // An unknown count is reported as unknown. Saying "0 harvested readings"
-    // when the oracle didn't tell us would be a confident falsehood.
-    const readings = stats && stats.readings_total != null
-      ? Number(stats.readings_total).toLocaleString('en-US') + ' harvested readings'
-      : 'an unknown number of harvested readings';
-    return `${trees} Trees, ${readings}, ` +
-      `${placed} shown on the map. Data is ${live ? 'live' : 'from a snapshot'}.`;
+    const S = stats || {};
+    const trees = S.trees_registered != null ? S.trees_registered : placed;
+    // Lead with activity: a registered count and a lifetime total can only go
+    // up, so on their own they can't tell a listener the network has stalled.
+    const parts = [];
+    if (S.trees_active_24h != null) parts.push(`${S.trees_active_24h} of ${trees} Trees reported in the last day`);
+    else parts.push(`${trees} Trees`);
+    parts.push(S.readings_last_24h != null
+      ? `${Number(S.readings_last_24h).toLocaleString('en-US')} readings harvested today`
+      : 'an unknown number of harvested readings');
+    if (S.readings_total != null) parts.push(`${Number(S.readings_total).toLocaleString('en-US')} all time`);
+    if (S.current_season != null) parts.push(`Season ${S.current_season}`);
+    if (S.attestations_total != null) parts.push(`${Number(S.attestations_total).toLocaleString('en-US')} on-chain attestations`);
+    parts.push(`${placed} shown on the map`);
+    return parts.join(', ') + `. Data is ${live ? 'live' : 'from a snapshot'}.`;
   }
+
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
     STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, referenceNow, ago, treeSummary, networkSummary, composition,
-    normalizeNodes, normalizeStats, lookup, abortAfter, withDeadline,
+    normalizeNodes, normalizeStats, STAT_FIELDS, showCount, lookup, abortAfter, withDeadline,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,
   };

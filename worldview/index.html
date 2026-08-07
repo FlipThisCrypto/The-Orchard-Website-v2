@@ -48,6 +48,7 @@
   .stats{pointer-events:auto;display:flex;gap:18px;margin-top:13px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 15px;backdrop-filter:blur(7px);width:max-content;max-width:100%}
   .stat .v{font-size:18px;font-weight:800}
   .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+  .stat .k2{font-size:10.5px;color:var(--muted2);margin-top:2px;white-space:nowrap}
   .live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--muted2)}
   .dot.on{background:var(--green-bright);box-shadow:0 0 9px var(--green)}
@@ -255,8 +256,12 @@
       <h1>The <span class="holo">Orchard</span> — live Trees</h1>
       <p class="sub">Every point is a real sensor node. Drag to spin, scroll to zoom, click a Tree to inspect it — or browse them as a list. Sensors, uptime, and its on-chain Orchard Pass.</p>
       <div class="stats">
-        <div class="stat"><div class="v" id="s-trees">—</div><div class="k">Trees</div></div>
-        <div class="stat"><div class="v" id="s-readings">—</div><div class="k">Harvested readings</div></div>
+        <!-- Activity first. A registered-Tree count and a lifetime reading
+             total can only ever go up; trees_active_24h and readings_last_24h
+             are the figures that fall when the network stalls. -->
+        <div class="stat"><div class="v" id="s-active">—</div><div class="k">Reporting today</div><div class="k2" id="s-trees">of — planted</div></div>
+        <div class="stat"><div class="v" id="s-today">—</div><div class="k">Harvested today</div><div class="k2" id="s-readings">— all time</div></div>
+        <div class="stat"><div class="v" id="s-season">—</div><div class="k">Season</div><div class="k2" id="s-attest">— attestations</div></div>
         <div class="stat"><div class="v" id="s-located">—</div><div class="k">On the map</div></div>
         <div class="stat"><div class="live"><span class="dot" id="livedot"></span> <span id="livetxt">connecting…</span></div></div>
       </div>
