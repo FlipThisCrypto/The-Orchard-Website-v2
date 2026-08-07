@@ -100,8 +100,27 @@ is the one that quietly broke. The whole set takes about three seconds, includin
 blob in git history, so nothing is deferred to push time.
 
 Add `--live` to also check that production is running this repo and that the oracle still publishes
-what the page reads. Every script takes `--help`, and refuses a flag it doesn't recognise rather
-than silently doing its default thing.
+what the page reads.
+
+**Is production alive right now?**
+
+```bash
+node scripts/heartbeat.mjs
+```
+
+This one is a monitor, not a gate, which is why it isn't part of `checks.mjs`. It separates three
+things that all look wrong and are not the same: the site or oracle being **broken** (exit 1, a
+human should act), production **lagging the repo** between manual deploys (expected — reported, never
+alerted), and the network being **quiet** (a fact about an orchard, not a fault). An alert that fires
+on healthy states gets muted, and a muted alert is worse than none.
+
+It runs hourly in GitHub Actions and after every push. A failing run turns the repository's Actions
+status red and emails the account that owns the schedule — that is the whole notification path, with
+no third-party service and nothing leaving the org. Its most valuable probe is the one nothing else
+performs: an oracle that answers every request with a perfect shape and *stopped updating hours ago*.
+
+Every script takes `--help`, and refuses a flag it doesn't recognise rather than silently doing its
+default thing.
 
 Just the tests — zero dependencies, Node's built-in runner, no install step:
 

@@ -1,0 +1,59 @@
+name: Heartbeat
+
+# Is production alive? Nothing else asks this unless a person types a command,
+# and the two things most likely to break — a direct-upload Pages deploy and an
+# oracle on a box this repo doesn't control — are exactly the two nobody was
+# watching.
+#
+# A failing run is the notification: GitHub marks the repository's Actions
+# status red and emails the account that owns the schedule. No third-party
+# monitoring service, no new dependency, no data leaving this org.
+on:
+  schedule:
+    # Hourly. Fine-grained enough to catch an outage the same working session,
+    # coarse enough that a flaky minute doesn't page anyone. GitHub runs cron
+    # late under load — this is a floor, not a guarantee.
+    - cron: '17 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    name: Production heartbeat
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Exits non-zero ONLY when the site or the oracle is actually broken.
+      # Deploy drift and a quiet network are reported and deliberately do not
+      # fail: Pages legitimately lags the repo between manual deploys, and an
+      # orchard where nothing reported today is a fact about the network, not
+      # an outage. An alert that fires on healthy states gets muted.
+      - name: Check production
+        id: check
+        run: node scripts/heartbeat.mjs
+
+      # Runs even on failure, so the red run carries the evidence rather than
+      # sending someone to re-run it by hand to find out what broke.
+      - name: Record the result in the run summary
+        if: always()
+        run: |
+          {
+            echo '## Production heartbeat'
+            echo ''
+            echo '```'
+            node scripts/heartbeat.mjs || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
