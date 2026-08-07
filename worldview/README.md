@@ -15,6 +15,8 @@ worldview integration — see the integration notes below.
   precedence over the declared location automatically.
 - Drag to rotate (no auto-spin), click a Tree for its Explorer panel. Honors `prefers-reduced-motion`
   and falls back to a 2D list with no WebGL.
+- **Refreshes every 60s in place** — new oracle data is fed into the existing globe, so your camera
+  position is never disturbed. Polling pauses while the tab is hidden and catches up on return.
 
 ## Important: must be served from an `*.theorchard.network` origin for LIVE data
 The oracle's CORS allows `*.theorchard.network` only. So:

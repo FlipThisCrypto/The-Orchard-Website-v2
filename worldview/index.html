@@ -219,11 +219,18 @@
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
   const $=(id)=>document.getElementById(id);
-  let world=null;
+  let world=null;      // the ONE Globe instance — built once, then only fed new data
+  let loading=false;   // guards against overlapping refreshes on a slow network
 
   async function getJSON(path){ const r=await fetch(ORACLE+path,{cache:"no-store"}); if(!r.ok) throw new Error(r.status); return r.json(); }
 
   async function load(){
+    if(loading) return;          // a refresh is already in flight
+    loading=true;
+    try { await refresh(); } finally { loading=false; }
+  }
+
+  async function refresh(){
     let nodes, stats, live=true;
     try { nodes = await getJSON("/nodes"); } catch(e){ live=false; nodes = SNAPSHOT_NODES; }
     try { stats = await getJSON("/network/stats"); } catch(e){ stats = SNAPSHOT_STATS; }
@@ -249,13 +256,24 @@
     $("livedot").className = "dot" + (live?" on":"");
     $("livetxt").textContent = live ? "live" : "snapshot";
 
-    if(!webglOK() || typeof Globe==="undefined"){
-      $("globe").style.display="none"; document.querySelector(".overlay").style.display="none";
-      $("fallback").style.display="flex";
-      $("fb-list").innerHTML = pts.map(p=>`<li><b>${p.short}…</b> — ${p.region} · ${p.state} · ${p.fruits.map(f=>f.emoji+f.type).join(", ")||"online"}</li>`).join("");
-      return;
-    }
-    renderGlobe(pts);
+    if(!webglOK() || typeof Globe==="undefined"){ renderFallback(pts); return; }
+    if(world) updateGlobe(pts); else renderGlobe(pts);
+  }
+
+  function renderFallback(pts){
+    $("globe").style.display="none"; document.querySelector(".overlay").style.display="none";
+    $("fallback").style.display="flex";
+    $("fb-list").innerHTML = pts.map(p=>`<li><b>${p.short}…</b> — ${p.region} · ${p.state} · ${p.fruits.map(f=>f.emoji+f.type).join(", ")||"online"}</li>`).join("");
+  }
+
+  // Refresh path: feed new data into the EXISTING globe. Never re-create it —
+  // a second Globe() on the same element leaves the old WebGL context alive and
+  // undisposed (the browser starts evicting them — "Context Lost" — after a
+  // dozen or so) and it snaps the camera back, throwing away wherever the
+  // visitor has dragged/zoomed to. The camera is deliberately untouched here.
+  function updateGlobe(pts){
+    world.pointsData(pts);
+    if(!reduce) world.ringsData(pts);
   }
 
   function renderGlobe(pts){
@@ -290,8 +308,18 @@
   }
   $("px").onclick=()=>$("panel").classList.remove("show");
 
+  // Poll the oracle each minute, but only while the tab is visible — a hidden
+  // tab has nothing to render, and we catch up the moment it comes back.
+  const REFRESH_MS = 60000;
+  let refreshTimer = null;
+  function startRefresh(){ if(refreshTimer===null) refreshTimer=setInterval(load, REFRESH_MS); }
+  function stopRefresh(){ if(refreshTimer!==null){ clearInterval(refreshTimer); refreshTimer=null; } }
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden) stopRefresh(); else { load(); startRefresh(); }
+  });
+
   load();
-  setInterval(load, 60000); // refresh live data each minute
+  if(!document.hidden) startRefresh();
 </script>
 <!-- Shared wallet widget — fills [data-orchard-connect] in the top nav -->
 <script src="https://oracle.theorchard.network/connect.js"></script>
