@@ -22,6 +22,28 @@ sensor is live when it isn't.
 | ⭐ Starfruit | Energy / infrastructure telemetry | Power/current, solar, uptime telemetry | **Future-ready** | VISION broader telemetry; only when expanding beyond environmental-led. |
 | 🟣 Plum | Seismic / ground motion | Geophone, vibration, seismic | **Future-ready** | Long-term scientific class; out of launch prominence. |
 
+## Assigned colours (Lead)
+
+The doc above leaves exact hex to the Lead. These are the assignments, and they are **enforced**:
+`tests/worldview-data.test.mjs` fails if this table and `worldview/orchard-data.js` disagree, or if
+any two classes share a colour — the spec's rule that "a lemon must never look like an apple".
+
+| Fruit | Class | Hex |
+|---|---|---|
+| 🍊 | Temperature | `#ff9f2e` |
+| 🫐 | Humidity | `#4f7bff` |
+| 🍋 | Air quality | `#f4d23c` |
+| 🍇 | Particulates | `#b14aef` |
+| 🍐 | Pressure | `#a3e635` |
+| 🍎 | Soil | `#c0764a` |
+| ⭐ | Energy | `#ff5ea8` |
+| 🟣 | Seismic | `#8b8f9e` |
+| 🌿 | Other (unclassified sensor) | `#2bd4d4` |
+
+Node **state** is a separate visual language and deliberately reuses the brand greens/cyan
+(`#4ade80` healthy · `#2bd4d4` idle · `#76907f` offline). Soil moved off `#4ade80` because it
+collided with the healthy state.
+
 ## Encoding rules
 - **Type = data class** — always answers "what kind of data?"; never owner/rewards/decoration.
 - **Quantity = count** — Tree: active channels/readings in that class; Grove: contributing Trees/coverage (visually capped; exact count in a badge/Explorer at high density).

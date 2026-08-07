@@ -54,19 +54,41 @@
   }
 
   // ---- Fruit = data class -------------------------------------------------
-  // sensor key -> data-class fruit (gps is location metadata, not a fruit).
-  // An unrecognised key passes through as its own label — which is exactly why
-  // every render path escapes it.
+  // ONE table drives classification, the on-screen legend and the colours.
+  // They used to be two hand-maintained lists and drifted: the globe rendered
+  // 🍎 Soil and a generic 🌿 that the legend never explained, while the
+  // canonical spec's ⭐ energy and 🟣 seismic classes were unreachable.
+  // Canonical classes: docs/product/fruit-data-legend.md.
+  // Order matters — the first pattern that matches wins.
+  const FRUITS = [
+    { type: 'Temperature',  emoji: '🍊', color: '#ff9f2e', match: /ds18|temp/,                  legend: 'temperature' },
+    { type: 'Humidity',     emoji: '🫐', color: '#4f7bff', match: /hum|dht|sht/,                legend: 'humidity' },
+    { type: 'Air quality',  emoji: '🍋', color: '#f4d23c', match: /mq13|voc|co2|aqi|air|gas/,   legend: 'air-quality gases' },
+    { type: 'Particulates', emoji: '🍇', color: '#b14aef', match: /pms|pm1|pm25|pm10|particul|dust/, legend: 'particulates' },
+    { type: 'Pressure',     emoji: '🍐', color: '#a3e635', match: /bmp|bme|press|baro/,          legend: 'barometric pressure' },
+    // Distinct colours: the spec's own rule is that a lemon must never look
+    // like an apple. Soil previously shared #4ade80 with the healthy state.
+    { type: 'Soil',         emoji: '🍎', color: '#c0764a', match: /soil|ground_moist/,           legend: 'soil / land' },
+    { type: 'Energy',       emoji: '⭐', color: '#ff5ea8', match: /power|current|volt|solar|energy|ina2/, legend: 'energy / infrastructure' },
+    { type: 'Seismic',      emoji: '🟣', color: '#8b8f9e', match: /seism|geophone|vibrat|quake/, legend: 'seismic / ground motion' },
+  ];
+  const UNKNOWN_FRUIT = { emoji: '🌿', color: '#2bd4d4', legend: 'sensor we don’t have a class for yet' };
+
+  /** sensor key -> data-class fruit. gps is location metadata, not a fruit. */
   function classify(key) {
     const k = (key || '').toLowerCase();
     if (k === 'gps') return null;
-    if (/ds18|temp/.test(k)) return { type: 'Temperature', emoji: '🍊', color: '#ff9f2e' };
-    if (/hum|dht|sht/.test(k)) return { type: 'Humidity', emoji: '🫐', color: '#4f7bff' };
-    if (/mq13|voc|co2|aqi|air/.test(k)) return { type: 'Air quality', emoji: '🍋', color: '#f4d23c' };
-    if (/pms|pm25|pm10|particul/.test(k)) return { type: 'Particulates', emoji: '🍇', color: '#b14aef' };
-    if (/bmp|bme|press|baro/.test(k)) return { type: 'Pressure', emoji: '🍐', color: '#a3e635' };
-    if (/soil/.test(k)) return { type: 'Soil', emoji: '🍎', color: '#4ade80' };
-    return { type: key, emoji: '🌿', color: '#2bd4d4' };
+    for (const f of FRUITS) if (f.match.test(k)) return { type: f.type, emoji: f.emoji, color: f.color };
+    // Unrecognised hardware still shows up, labelled with its own key — which
+    // is exactly why every render path escapes it.
+    return { type: key, emoji: UNKNOWN_FRUIT.emoji, color: UNKNOWN_FRUIT.color };
+  }
+
+  /** The legend, built from the same table — so it cannot drift from the map. */
+  function legendRows() {
+    return FRUITS.map((f) => ({ emoji: f.emoji, color: f.color, label: f.type, hint: f.legend }))
+      .concat([{ emoji: UNKNOWN_FRUIT.emoji, color: UNKNOWN_FRUIT.color, label: 'Other sensor', hint: UNKNOWN_FRUIT.legend }])
+      .concat([{ emoji: '🌱', color: '#4ade80', label: 'Online · no sensors yet', hint: 'a Tree reporting in with nothing to harvest yet' }]);
   }
 
   function fruitsFor(sensors) {
@@ -79,6 +101,8 @@
   }
 
   // ---- Node state ---------------------------------------------------------
+  // State is a different visual language from fruit: it says whether a Tree is
+  // reporting, not what it senses.
   const STATE_COLOR = { healthy: '#4ade80', idle: '#2bd4d4', offline: '#76907f' };
 
   function stateFrom(n, now = Date.now()) {
@@ -240,7 +264,7 @@
   }
 
   return {
-    esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor,
+    esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
     STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
     normalizeNodes, normalizeStats, lookup,
     LIST_CAP, matchesQuery, listView,

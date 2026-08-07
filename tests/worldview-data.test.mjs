@@ -463,3 +463,73 @@ test('ringSet tolerates junk input and an unknown state', () => {
   assert.equal(rings.length, RING_CAP);
   assert.equal(rings[0].state, 'healthy');    // known-live still wins over unknown
 });
+
+// ---------------------------------------------------------------------------
+// Fruit legend: code and canonical doc must agree, in both directions.
+// They drifted once already — the globe rendered 🍎 and 🌿 with no legend
+// entry, and the doc's ⭐/🟣 classes were unreachable from any sensor key.
+// ---------------------------------------------------------------------------
+import { readFileSync } from 'node:fs';
+import { fileURLToPath as toPath } from 'node:url';
+import { dirname as dirOf, join as joinPath } from 'node:path';
+const { FRUITS, legendRows } = OrchardData;
+const legendDoc = readFileSync(
+  joinPath(dirOf(toPath(import.meta.url)), '..', 'docs/product/fruit-data-legend.md'), 'utf8');
+
+test('every data class in the canonical doc is reachable from a sensor key', () => {
+  // Column 1 of the canonical legend table, e.g. "| 🍊 Orange | ... |"
+  const docEmoji = [...legendDoc.matchAll(/^\| (\S+) \w+ \|/gmu)].map((m) => m[1]);
+  assert.ok(docEmoji.length >= 8, `expected the canonical table, found ${docEmoji.length} rows`);
+  const codeEmoji = new Set(FRUITS.map((f) => f.emoji));
+  for (const e of docEmoji) {
+    assert.ok(codeEmoji.has(e), `${e} is in the canonical legend but classify() can never produce it`);
+  }
+});
+
+test('the assigned-colour table in the doc matches the code exactly', () => {
+  const rows = [...legendDoc.matchAll(/^\| (\S+) \| ([^|]+?) \| `(#[0-9a-f]{6})` \|/gmiu)]
+    .map(([, emoji, cls, hex]) => ({ emoji, cls: cls.trim(), hex }));
+  assert.ok(rows.length >= 9, `expected the colour table, found ${rows.length} rows`);
+  for (const r of rows) {
+    if (/other/i.test(r.cls)) { assert.equal(classify('totally_unknown_sensor').color, r.hex); continue; }
+    const f = FRUITS.find((x) => x.type === r.cls);
+    assert.ok(f, `doc lists "${r.cls}" but the code has no such class`);
+    assert.equal(f.color, r.hex, `${r.cls}: doc says ${r.hex}, code says ${f.color}`);
+    assert.equal(f.emoji, r.emoji, `${r.cls}: doc says ${r.emoji}, code says ${f.emoji}`);
+  }
+});
+
+test('no two data classes share a colour', () => {
+  // "A lemon must never look like an apple" — the spec's own rule.
+  const colors = FRUITS.map((f) => f.color).concat(classify('unknown_thing').color);
+  assert.equal(new Set(colors).size, colors.length, `duplicate colour among ${colors.join(', ')}`);
+});
+
+test('no fruit the globe can render is missing from the legend', () => {
+  const legend = legendRows();
+  const legendEmoji = new Set(legend.map((r) => r.emoji));
+  for (const f of FRUITS) assert.ok(legendEmoji.has(f.emoji), `${f.type} (${f.emoji}) has no legend row`);
+  assert.ok(legendEmoji.has('🌿'), 'the unclassified fruit needs a legend row — it is renderable');
+  assert.ok(legendEmoji.has('🌱'), 'a Tree with no sensors needs a legend row');
+  for (const r of legend) {
+    assert.match(r.color, /^#[0-9a-f]{6}$/i);
+    assert.ok(r.label && r.hint, `legend row ${r.emoji} needs a label and a hint`);
+  }
+});
+
+test('the new classes are actually reachable from plausible sensor keys', () => {
+  assert.equal(classify('ina226_power').type, 'Energy');
+  assert.equal(classify('solar_v').type, 'Energy');
+  assert.equal(classify('geophone').type, 'Seismic');
+  assert.equal(classify('seismometer').type, 'Seismic');
+  assert.equal(classify('soil_moisture').type, 'Soil');
+  assert.equal(classify('dust_pm1').type, 'Particulates');
+  assert.equal(classify('gas_voc').type, 'Air quality');
+});
+
+test('the four live Trees still classify exactly as before', () => {
+  // Regression lock against the real sensors the network reports today.
+  assert.deepEqual(fruitsFor(['ds18b20', 'gps']).map((f) => f.type + f.emoji), ['Temperature🍊']);
+  assert.deepEqual(fruitsFor([]), []);
+  assert.equal(classify('ds18b20').color, '#ff9f2e');
+});
