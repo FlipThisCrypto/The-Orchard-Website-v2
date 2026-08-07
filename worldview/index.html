@@ -104,7 +104,11 @@
   .tlist.show{transform:none;opacity:1;visibility:visible;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s,visibility 0s}
   .tlist::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:16px 16px 0 0;background:var(--holo)}
   .tlist h2{margin:4px 0 2px;font-size:16px}
-  .tl-sub{margin:0 0 11px;color:var(--muted);font-size:12.5px}
+  .tl-sub{margin:0 0 9px;color:var(--muted);font-size:12.5px}
+  .tl-q{width:100%;font:inherit;font-size:12.5px;color:var(--text);background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;padding:8px 11px;margin-bottom:8px}
+  .tl-q::placeholder{color:var(--muted2)}
+  .tl-q:focus{outline:none;border-color:rgba(120,230,200,.5)}
+  .tl-count{margin:0 0 9px;color:var(--muted2);font-size:11.5px}
   .tl-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
   .tl-items li{margin:0}
   .tl-items button{width:100%;text-align:left;cursor:pointer;font:inherit;font-size:12.5px;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:11px;padding:9px 11px;display:flex;align-items:center;gap:9px}
@@ -216,6 +220,10 @@
     <button class="x" id="tlx" aria-label="Close Tree list">✕</button>
     <h2 id="tl-h">Trees</h2>
     <p class="tl-sub" id="tl-sub">Every Tree in the network. Choose one to inspect it.</p>
+    <label class="sr-only" for="tl-q">Search Trees by id, region, state or sensor</label>
+    <input class="tl-q" id="tl-q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Search id, region, state or fruit…" aria-describedby="tl-count" />
+    <p class="tl-count" id="tl-count" role="status"></p>
     <ul class="tl-items" id="tl-items"></ul>
   </div>
 
@@ -266,7 +274,8 @@
   // Pure data logic (classification, node state, geohash, escaping, id checks)
   // lives in orchard-data.js so it can be unit-tested — see tests/.
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
-          networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup } = window.OrchardData;
+          networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
+          listView } = window.OrchardData;
   let TREES = [];   // the Trees currently shown, in list order
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
@@ -325,7 +334,7 @@
     if($("a11y-status").textContent !== summary) $("a11y-status").textContent = summary;
 
     TREES = pts;
-    $("browse").textContent = `🌳 Browse Trees (${pts.length})`;
+    $("browse").textContent = `🌳 Browse Trees (${pts.length.toLocaleString()})`;
     renderTreeList($("tl-items"), pts, true);
 
     // The page is useful now — stats and the Tree list are painted above. The
@@ -337,16 +346,24 @@
   // One list implementation, used by the Tree-list dialog and by the no-WebGL
   // fallback. Every value is device-reported, so everything goes through esc().
   function renderTreeList(host, pts, interactive){
-    const html = !pts.length
-      ? `<li class="tl-empty">No Trees are reporting a location yet.</li>`
-      : pts.map((p,i)=>{
+    // Bounded by construction: at the 100,000-Tree design target an unbounded
+    // list would be ~600k DOM nodes rebuilt every refresh. The cap is stated
+    // on screen and search reaches everything beyond it.
+    const view = interactive ? listView(pts, $("tl-q").value) : listView(pts, "", 200);
+    if(interactive) setNote("tl-count", view.note);
+    const items = view.shown;
+    const html = !items.length
+      ? `<li class="tl-empty">${esc(view.note)}</li>`
+      : items.map((p,i)=>{
           const dot = `<i class="tl-dot" style="background:${esc(STATE_COLOR[p.state]||"#76907f")}"></i>`;
           const body = `<span class="tl-txt"><span class="tl-id">${esc(p.short)}…</span>
             <span class="tl-meta">${esc(p.region)} · ${esc(p.state)} · ${esc((p.fruits||[]).map(f=>f.emoji+" "+f.type).join(" · "))||"online · no sensors yet"}</span></span>`;
           return interactive
             ? `<li><button type="button" data-i="${i}" aria-label="${esc(treeSummary(p))}">${dot}${body}</button></li>`
             : `<li><span class="tl-flat">${dot}${body}</span></li>`;
-        }).join("");
+        }).join("")
+        // The no-WebGL list has no search box, so any cap must be said here.
+        + (!interactive && view.truncated ? `<li class="tl-empty">${esc(view.note)}</li>` : "");
 
     // A 60s refresh must not disturb someone using the list: skip the re-render
     // when nothing changed, and put focus back on the same row when it did.
@@ -355,7 +372,7 @@
     host.innerHTML = html;
     host.__html = html;
     if(interactive){
-      host.querySelectorAll("button[data-i]").forEach(b=>{ b.onclick=()=>selectTree(pts[+b.dataset.i], b); });
+      host.querySelectorAll("button[data-i]").forEach(b=>{ b.onclick=()=>selectTree(items[+b.dataset.i], b); });
       if(focused!=null){
         const again = host.querySelector(`button[data-i="${CSS.escape(focused)}"]`);
         if(again) again.focus({preventScroll:true});
@@ -425,7 +442,9 @@
     el.removeAttribute("inert");
     el.classList.add("show");
     if(id==="treelist") $("browse").setAttribute("aria-expanded","true");
-    (el.querySelector("button[data-i]") || el).focus({preventScroll:true});
+    // The list opens on its search box: with 4 Trees you Tab once, with 4,000
+    // you type. Either way the first thing focused is the thing that helps.
+    (el.querySelector("input[type=search]") || el.querySelector("button[data-i]") || el).focus({preventScroll:true});
   }
   function closeDialog(id){
     const el = $(id);
@@ -446,6 +465,8 @@
 
   $("px").onclick = ()=>closeDialog("panel");
   $("tlx").onclick = ()=>closeDialog("treelist");
+  // Typing re-renders from the full set, so search reaches past the cap.
+  $("tl-q").addEventListener("input", ()=>renderTreeList($("tl-items"), TREES, true));
   $("browse").onclick = ()=>{
     if($("treelist").classList.contains("show")) closeDialog("treelist");
     else openDialog("treelist", $("browse"));

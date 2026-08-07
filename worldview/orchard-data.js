@@ -140,6 +140,48 @@
     return typeof key === 'string' && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
   }
 
+  // ---- Searching and capping the Tree list --------------------------------
+  // MISSION.md commits to scaling toward 100,000 Trees without a redesign. An
+  // unbounded list is ~6 DOM nodes per Tree rebuilt on every refresh, so the
+  // list is capped and searchable instead — and the cap is always disclosed,
+  // never silent.
+  const LIST_CAP = 100;
+
+  /** Free-text match over the fields a visitor can actually see. */
+  function matchesQuery(p, query) {
+    const q = String(query ?? '').trim().toLowerCase();
+    if (!q) return true;
+    const hay = [
+      p.id, p.short, p.region, p.state, p.fw,
+      ...(p.fruits || []).map((f) => f.type),
+      ...(p.sensors || []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return q.split(/\s+/).every((term) => hay.includes(term));
+  }
+
+  /**
+   * What the list should show: the matches, the slice actually rendered, and
+   * the sentence explaining any difference between the two.
+   */
+  function listView(trees, query, cap = LIST_CAP) {
+    const all = Array.isArray(trees) ? trees : [];
+    const matched = all.filter((p) => matchesQuery(p, query));
+    const shown = matched.slice(0, cap);
+    const q = String(query ?? '').trim();
+    let note;
+    if (!all.length) note = 'No Trees are reporting a location yet.';
+    else if (!matched.length) note = `No Trees match “${q}”.`;
+    else if (matched.length > shown.length) {
+      note = `Showing the first ${shown.length} of ${matched.length.toLocaleString('en-US')}` +
+        (q ? ` matching “${q}”` : ' Trees') + ' — search to narrow it down.';
+    } else if (q) {
+      note = `${matched.length} Tree${matched.length === 1 ? '' : 's'} match “${q}”.`;
+    } else {
+      note = `All ${matched.length} Tree${matched.length === 1 ? '' : 's'}.`;
+    }
+    return { shown, matched: matched.length, total: all.length, truncated: matched.length > shown.length, note };
+  }
+
   // ---- Text for assistive tech --------------------------------------------
   // The globe is a canvas: it cannot describe itself. These build the text
   // that the Tree list, the no-WebGL fallback and the live region all use, so
@@ -170,5 +212,6 @@
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor,
     STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
     normalizeNodes, normalizeStats, lookup,
+    LIST_CAP, matchesQuery, listView,
   };
 });

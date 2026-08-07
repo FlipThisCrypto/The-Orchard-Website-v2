@@ -312,3 +312,91 @@ test('lookup cannot be walked into Object.prototype', () => {
   assert.equal(lookup(map, 'MISSING'), null);
   assert.equal(lookup(map, 42), null);
 });
+
+// ---------------------------------------------------------------------------
+// listView — bounding the Tree list. MISSION.md commits to 100,000 Trees
+// "without a redesign"; an unbounded list is ~6 DOM nodes each, rebuilt every
+// refresh. The cap must never be silent.
+// ---------------------------------------------------------------------------
+const { listView, matchesQuery, LIST_CAP } = OrchardData;
+
+const tree = (i, over = {}) => ({
+  id: 'NODE' + String(i).padStart(4, '0'),
+  short: 'NODE' + String(i).padStart(4, '0'),
+  region: i % 2 ? 'Shepherdsville, KY (approx.)' : 'cell dn6q',
+  state: i % 3 === 0 ? 'offline' : 'healthy',
+  fw: '0.5.1',
+  sensors: i % 2 ? ['ds18b20'] : ['bme280'],
+  fruits: i % 2 ? [{ type: 'Temperature', emoji: '🍊' }] : [{ type: 'Pressure', emoji: '🍐' }],
+  ...over,
+});
+const many = (n) => Array.from({ length: n }, (_, i) => tree(i));
+
+test('the rendered slice is bounded however many Trees exist', () => {
+  for (const n of [0, 1, 99, 100, 101, 5000, 100000]) {
+    const v = listView(many(n));
+    assert.ok(v.shown.length <= LIST_CAP, `${n} Trees rendered ${v.shown.length}`);
+    assert.equal(v.total, n);
+  }
+});
+
+test('a truncated list always says so, with the real totals', () => {
+  const v = listView(many(5000));
+  assert.equal(v.truncated, true);
+  assert.match(v.note, /Showing the first 100 of 5,000/);
+  assert.match(v.note, /search to narrow it down/);
+});
+
+test('a complete list says it is complete rather than staying silent', () => {
+  const v = listView(many(4));
+  assert.equal(v.truncated, false);
+  assert.equal(v.note, 'All 4 Trees.');
+  assert.equal(listView(many(1)).note, 'All 1 Tree.');
+  assert.equal(listView([]).note, 'No Trees are reporting a location yet.');
+});
+
+test('search reaches Trees past the cap', () => {
+  const trees = many(5000);
+  const v = listView(trees, 'node4999');
+  assert.equal(v.matched, 1);
+  assert.equal(v.shown[0].id, 'NODE4999');   // the 5000th Tree, never rendered unsearched
+  assert.match(v.note, /1 Tree match/);
+});
+
+test('search matches on id, region, state and fruit', () => {
+  const trees = many(60);
+  assert.ok(listView(trees, 'offline').matched > 0);
+  assert.ok(listView(trees, 'temperature').matched > 0);
+  assert.ok(listView(trees, 'shepherdsville').matched > 0);
+  assert.ok(listView(trees, 'dn6q').matched > 0);
+  assert.ok(listView(trees, 'ds18b20').matched > 0);
+});
+
+test('all search terms must match, and matching is case-insensitive', () => {
+  const trees = [tree(0), tree(1)];                              // offline+Pressure, healthy+Temperature
+  assert.equal(listView(trees, 'HEALTHY temperature').matched, 1);
+  assert.equal(listView(trees, 'healthy pressure').matched, 0);  // no Tree is both
+  assert.equal(listView(trees, '   ').matched, 2);               // blank shows everything
+});
+
+test('a search that finds nothing says which search found nothing', () => {
+  const v = listView(many(10), 'zzz-nothing');
+  assert.equal(v.matched, 0);
+  assert.deepEqual(v.shown, []);
+  assert.match(v.note, /No Trees match “zzz-nothing”/);
+});
+
+test('matchesQuery tolerates sparse Trees and odd queries', () => {
+  assert.equal(matchesQuery({}, ''), true);
+  assert.equal(matchesQuery({}, 'x'), false);
+  assert.equal(matchesQuery({ id: 'A' }, null), true);
+  assert.equal(matchesQuery({ id: 'A', fruits: null, sensors: null }, 'a'), true);
+});
+
+test('listView tolerates a non-array input', () => {
+  for (const v of [null, undefined, 'x', 42, {}]) {
+    const out = listView(v);
+    assert.deepEqual(out.shown, []);
+    assert.equal(out.total, 0);
+  }
+});
