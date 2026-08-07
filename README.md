@@ -133,6 +133,21 @@ That matters because `script-src` is **enforced** on worldview, with no `'unsafe
 script is allowed by sha256 hash, derived from the page by `scripts/csp.mjs` and re-checked by the
 gate; a hand-written hash would go stale and the browser would block the page's own boot script.
 
+Add `--oracle` to run the page's **live** path locally — the stub answers `/nodes` and
+`/network/stats` itself, because the real oracle refuses CORS from localhost and every local check
+before this silently exercised the offline fallback instead:
+
+```bash
+node scripts/serve.mjs --oracle --scenario all-states
+```
+
+Scenarios: `live`, `down`, `malformed`, `frozen-clock`, `all-states`, `huge` (10,000 Trees). They
+exist because the real network has four Trees in one town and cannot produce a stopped Tree, a
+frozen oracle clock, or a network at scale — so those branches were only ever reached by unit tests
+on synthetic objects, never through fetch → normalize → render. The page reads same-origin **only**
+on localhost: a page that can be told where to fetch its data is a page an attacker can point at
+their own origin with a link.
+
 Just the tests — zero dependencies, Node's built-in runner, no install step:
 
 ```bash

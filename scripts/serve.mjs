@@ -14,7 +14,8 @@ import { createServer } from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, normalize } from 'node:path';
-import { parseArgs, showHelp } from './args.mjs';
+import { parseArgs, showHelp, EXIT_USAGE } from './args.mjs';
+import { SCENARIOS, assertPrivacySafe } from './scenarios.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -57,9 +58,23 @@ export function headersFor(rules, path) {
 }
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function createStaticServer(root, rules) {
+export function createStaticServer(root, rules, oracle = null) {
   return createServer((req, res) => {
     let path = decodeURIComponent(req.url.split('?')[0]);
+
+    // The oracle stub, when one is running. app.js fetches same-origin on
+    // localhost precisely so this can answer — it is the only way to exercise
+    // the page's LIVE path outside production.
+    if (oracle && (path === '/nodes' || path === '/network/stats')) {
+      const answer = oracle(path);
+      res.writeHead(answer.status, {
+        'content-type': answer.contentType || 'application/json; charset=utf-8',
+        'access-control-allow-origin': '*',
+      });
+      res.end(answer.body);
+      return;
+    }
+
     if (path.endsWith('/')) path += 'index.html';
     // Never serve outside the root, however the path is spelled.
     const file = join(root, normalize(path).replace(/^([/\\])+/, ''));
@@ -82,34 +97,75 @@ export function createStaticServer(root, rules) {
   });
 }
 
+/**
+ * Build the stub handler for a scenario. Returns null for no stub.
+ * Pure apart from the scenario's own clock.
+ */
+export function oracleHandler(name) {
+  const scenario = SCENARIOS[name];
+  if (!scenario) {
+    console.error(`\n  ✗ unknown scenario: ${name}\n\n  Available:\n` +
+      Object.entries(SCENARIOS).map(([k, v]) => `    ${k.padEnd(14)} ${v.summary}`).join('\n') + '\n');
+    process.exit(EXIT_USAGE);
+  }
+  const built = scenario.build();
+  if (built.nodes) assertPrivacySafe(built.nodes);
+  return (path) => {
+    if (built.status && built.status >= 400) {
+      return { status: built.status, body: built.body || 'error', contentType: 'text/plain' };
+    }
+    if (built.body !== undefined) return { status: 200, body: built.body };
+    return { status: 200, body: JSON.stringify(path === '/nodes' ? built.nodes : built.stats) };
+  };
+}
+
 const SPEC = {
   name: 'serve',
   path: 'scripts/serve.mjs',
   summary: 'serve worldview/ locally with its production response headers',
-  flags: { '--port': 'port to listen on (default 5075)' },
-  notes: ['Applies worldview/_headers, so an enforced CSP is testable before it ships.'],
+  flags: {
+    '--port': 'port to listen on (default 5075)',
+    '--oracle': 'also answer /nodes and /network/stats, so the LIVE path runs locally',
+    '--scenario': `which oracle to pretend to be (default live): ${Object.keys(SCENARIOS).join(', ')}`,
+  },
+  notes: [
+    'Applies worldview/_headers, so an enforced CSP is testable before it ships.',
+    'Without --oracle the page falls back to its snapshot, as it does today.',
+  ],
 };
-function main(argv) {
-  // --port takes a value, which parseArgs doesn't model; pull it out first.
-  const rest = [], portIdx = argv.indexOf('--port');
-  let port = 5075;
+/** Pull `--flag value` pairs out of argv so parseArgs sees only bare flags. */
+export function takeValues(argv, names) {
+  const values = {}, rest = [];
   for (let i = 0; i < argv.length; i++) {
-    if (i === portIdx) { port = Number(argv[i + 1]); i++; continue; }
+    if (names.includes(argv[i])) { values[argv[i]] = argv[i + 1]; i++; continue; }
     rest.push(argv[i]);
   }
-  const { help } = parseArgs(rest, SPEC);
+  return { values, rest };
+}
+
+function main(argv) {
+  const { values, rest } = takeValues(argv, ['--port', '--scenario']);
+  const { help, flags } = parseArgs(rest, SPEC);
   if (help) showHelp(SPEC);
+
+  const port = values['--port'] === undefined ? 5075 : Number(values['--port']);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    console.error(`\n  ✗ --port needs a port number, got: ${argv[portIdx + 1]}\n`);
-    process.exit(2);
+    console.error(`\n  ✗ --port needs a port number, got: ${values['--port']}\n`);
+    process.exit(EXIT_USAGE);
   }
+  const scenario = values['--scenario'] || 'live';
+  const wantsOracle = flags.has('--oracle') || values['--scenario'] !== undefined;
 
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'worldview');
   const rules = parseHeaders(readFileSync(join(root, '_headers'), 'utf8'));
-  createStaticServer(root, rules).listen(port, '127.0.0.1', () => {
+  const oracle = wantsOracle ? oracleHandler(scenario) : null;
+
+  createStaticServer(root, rules, oracle).listen(port, '127.0.0.1', () => {
     console.log(`\n  worldview/ with production headers — http://127.0.0.1:${port}\n`);
     for (const r of rules) console.log(`    ${r.pattern.padEnd(16)} ${Object.keys(r.headers).length} header(s)`);
-    console.log('');
+    console.log(oracle
+      ? `\n  Oracle stub: ${scenario} — ${SCENARIOS[scenario].summary}\n  The page runs its LIVE path.\n`
+      : `\n  No oracle stub — the page will fall back to its snapshot. Add --oracle.\n`);
   });
 }
 

@@ -74,3 +74,28 @@ manual FPS check on a mid-tier phone at L0/L1/L2; confirm 2D + reduced-motion pa
 data. No-WebGL tested by disabling WebGL in devtools.
 
 *Source: Lead. Numbers are targets to validate with the PoC (ORCH-040) and refine in build.*
+
+## Measured: what worldview actually does at 10,000 Trees
+
+Taken 2026-08-07 against `node scripts/serve.mjs --oracle --scenario huge`, which is the first time
+the page's **live** path could be run outside production at all (the oracle refuses CORS from
+localhost, so every earlier local check exercised the offline fallback). Numbers are localhost, so
+transfer time is a floor, not a forecast.
+
+| What | At 10,000 Trees | Bounded by |
+|---|---|---|
+| `/nodes` payload | **3,449 KB** | ⚠️ nothing |
+| Globe markers drawn | **8** | `cellsFrom` — Trees collapse into ~5 km cells |
+| List rows rendered | **100** | `LIST_CAP`, with "Showing the first 100 of 10,000" shown |
+| Pulsing rings | 8 | `RING_CAP` (250), never reached once Trees cluster |
+| `domInteractive` | 361 ms | — |
+
+**Rendering is bounded; the payload is not.** Every render-side cap holds: the globe draws 8 markers
+for 10,000 Trees because the ~5 km cell clustering aggregates them, the list caps at 100 and says so
+rather than silently truncating, and the ring cap is never even reached. The one unbounded cost is
+the single `/nodes` fetch — **3.4 MB**, which the page must download in full before it can show
+anything. On a mid-tier mobile connection that alone blows the LCP budget above, several times over.
+
+This is the concrete case for the tiled Atlas API in [0001-atlas-globe.md](0001-atlas-globe.md): the
+bottleneck is not drawing Trees, it is transferring them. Any fix has to happen at the API — the
+page cannot cap what it has already been sent.

@@ -8,7 +8,22 @@
 // Load order matters: orchard-data.js defines window.OrchardData, this file
 // consumes it, and the wallet widget loads after. The boot error boundary
 // stays inline in the page because it must run before anything it guards.
-const ORACLE = "https://oracle.theorchard.network";
+// Where the data comes from.
+//
+// On localhost this is the empty string, meaning SAME-ORIGIN — so `node
+// scripts/serve.mjs --oracle` can answer /nodes and /network/stats itself and
+// the page runs its real LIVE path locally. Until this existed, the oracle
+// refused CORS from localhost, so every local check silently exercised the
+// offline fallback and the live path could only ever be tested by deploying to
+// production and looking at it.
+//
+// Deliberately NOT a URL parameter or any other switch: a page that can be
+// told where to fetch its data from is a page an attacker can point at their
+// own origin with a link. The only thing that changes this is being served
+// from localhost, which no visitor ever is.
+const ORACLE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+  ? ""
+  : "https://oracle.theorchard.network";
   // Operator-declared COARSE locations, as geohash CELLS — never coordinates.
   //
   // This used to be a table of latitudes and longitudes written to three
