@@ -48,6 +48,10 @@
   .sub code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--cyan)}
   .bnote{margin:-14px 0 18px;color:var(--orange);font-size:12.5px}
   .bnote[hidden]{display:none}
+  /* Announcements for assistive tech only — nothing visual changes. */
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+  /* Keyboard focus must be obvious on a dark, busy background. */
+  :focus-visible{outline:2px solid var(--green-bright);outline-offset:3px;border-radius:10px}
   a{color:var(--green);text-decoration:none}a:hover{color:var(--green-bright)}
 
   .live{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
@@ -124,6 +128,10 @@
   <h1>The Orchard <span class="holo">v2</span> — Mission Control</h1>
   <div class="sub">Live council progress · <code id="repo">FlipThisCrypto/The-Orchard-Website-v2</code> · <span id="freshness">—</span></div>
   <p class="bnote" id="board-note" role="status" hidden></p>
+  <!-- Filter results and async chip updates are announced here; the visual
+       change alone tells a screen-reader user nothing. -->
+  <p class="sr-only" id="announcer" role="status" aria-live="polite"></p>
+<main>
 
   <div class="live">
     <div class="chip"><div class="l"><span class="dot" id="ci-dot"></span> Last commit</div><div class="v" id="ci-v">—</div></div>
@@ -141,8 +149,9 @@
   <div class="lanes" id="lanes"></div>
 
   <h2 class="sec">Tasks by phase</h2>
-  <div class="toolbar" id="filters"></div>
+  <div class="toolbar" id="filters" role="group" aria-label="Filter tasks by seat"></div>
   <div id="phases"></div>
+</main>
 
   <div class="foot">
     Source of truth: <a href="../tasks/tasks.json" target="_blank" rel="noopener">tasks/tasks.json</a> ·
@@ -188,17 +197,50 @@
       const own = tasks.filter(t=>t.owner===key); const p=pct(own);
       const byStatus={}; own.forEach(t=>byStatus[t.status]=(byStatus[t.status]||0)+1);
       const br = Object.entries(byStatus).map(([s,n])=>`<span>${n} ${s.replace(/_/g,' ')}</span>`).join("");
+      // The card carries block content, so it can't be a <button>; give it the
+      // full button contract instead — reachable, toggleable with Enter AND
+      // Space, and with its on/off state exposed, not just coloured in.
       const el=document.createElement("div"); el.className="lane"+(filter===key?" active":"");
       el.style.setProperty("--accent",ow.color);
+      el.setAttribute("role","button");
+      el.setAttribute("tabindex","0");
+      el.setAttribute("aria-pressed", String(filter===key));
+      el.setAttribute("aria-label", `${ow.name} — ${ow.seat}. ${own.filter(isDone).length} of ${own.length} tasks done. Filter the board to this seat.`);
       el.innerHTML=`<div class="lpct" style="color:${ow.color}">${p}%</div>
         <div class="who"><span class="seatdot" style="background:${ow.color}"></span><b>${ow.name}</b></div>
         <div class="seat">${ow.seat}</div>
         <div class="minibar"><i style="width:${p}%;background:${ow.color}"></i></div>
         <div class="br">${br||"<span>no tasks</span>"}</div>`;
-      el.onclick=()=>{filter=(filter===key?"all":key);draw();};
+      el.dataset.filter=key;
+      const toggle=()=>setFilter(filter===key?"all":key, "lane");
+      el.onclick=toggle;
+      el.onkeydown=(e)=>{
+        if(e.key==="Enter"||e.key===" "||e.key==="Spacebar"){ e.preventDefault(); toggle(); }
+      };
       lanes.appendChild(el);
     }
     drawFilters(); drawPhases();
+  }
+
+  // One place that changes the filter, so the announcement can't drift from
+  // what's actually shown, and focus survives the re-render.
+  function setFilter(next, from){
+    filter = next;
+    draw();                                   // re-renders both control sets
+    const shown = (DATA.tasks||[]).filter(t=>filter==="all"||t.owner===filter).length;
+    const who = filter==="all" ? "all seats" : ((DATA.owners||{})[filter]||{}).name || filter;
+    announce(`Showing ${shown} task${shown===1?"":"s"} for ${who}.`);
+    // draw() replaced the element the user was standing on. Put them back on
+    // the same control they used — not the other set, which is disorienting.
+    const sel = `${from==="lane"?".lane":".tb"}[data-filter="${CSS.escape(filter)}"]`;
+    const again = document.querySelector(sel) || document.querySelector(`.tb[data-filter="${CSS.escape(filter)}"]`);
+    if(again) again.focus({preventScroll:true});
+  }
+
+  function announce(msg){
+    const el=$("announcer");
+    if(el.textContent===msg) return;
+    el.textContent=msg;
   }
 
   function drawFilters(){
@@ -206,7 +248,10 @@
     const opts=[["all","All"]].concat(Object.entries(DATA.owners||{}).map(([k,o])=>[k,o.name]));
     for(const [k,label] of opts){
       const b=document.createElement("button"); b.className="tb"+(filter===k?" on":""); b.textContent=label;
-      b.onclick=()=>{filter=k;draw();}; f.appendChild(b);
+      b.type="button";
+      b.setAttribute("aria-pressed", String(filter===k));   // which filter is on, not just which looks on
+      b.dataset.filter=k;
+      b.onclick=()=>setFilter(k, "button"); f.appendChild(b);
     }
   }
 
@@ -303,6 +348,10 @@
   function ghNote(){
     const budget = ghRemaining === null ? "" : ` · ${ghRemaining} GitHub calls left this hour`;
     $("freshness").textContent = "status checked "+new Date().toLocaleTimeString()+budget;
+    // The chips fill in asynchronously; without this a screen-reader user never
+    // learns the repo status arrived at all.
+    announce(`Repository status: last commit ${$("ci-v").textContent.trim()}, `
+      + `${$("pr-v").textContent.trim()} open pull requests, latest tag ${$("rel-v").textContent.trim()}.`);
   }
 
   function startGh(){ if(ghTimer===null) ghTimer = setInterval(ghStatus, GH_POLL_MS); }
