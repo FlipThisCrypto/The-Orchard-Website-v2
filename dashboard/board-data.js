@@ -17,6 +17,16 @@
 })(typeof self !== 'undefined' ? self : globalThis, function () {
   'use strict';
 
+  /**
+   * Every network call gets a deadline. A request that connects and then never
+   * answers hangs forever, and any in-flight guard around it stays latched.
+   */
+  function abortAfter(ms) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error('timeout after ' + ms + 'ms')), ms);
+    return { signal: controller.signal, done: () => clearTimeout(timer), controller };
+  }
+
   const isPlainObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
   const str = (v) => (typeof v === 'string' ? v : null);
 
@@ -82,5 +92,5 @@
     return { ...raw, tasks, phases, owners, repo: str(raw.repo) || null, updated: str(raw.updated) || null };
   }
 
-  return { normalizeBoard, isPlainObject, esc, safeColor, isRepoPath };
+  return { normalizeBoard, isPlainObject, esc, safeColor, isRepoPath, abortAfter };
 });

@@ -168,7 +168,8 @@
 <script>
   const REPO = "FlipThisCrypto/The-Orchard-Website-v2";
   const REPO_URL = "https://github.com/"+REPO+"/";
-  const { normalizeBoard, esc, safeColor, isRepoPath } = window.BoardData;
+  const { normalizeBoard, esc, safeColor, isRepoPath, abortAfter } = window.BoardData;
+  const REQUEST_TIMEOUT_MS = 8000;   // no request may outlive its usefulness
   let DATA = normalizeBoard(window.TASKS) || {tasks:[],phases:[],owners:{}};
   let filter = "all";
   const $ = (id) => document.getElementById(id);
@@ -308,7 +309,10 @@
   let ghTimer = null, ghBlockedUntil = 0, ghRemaining = null;
 
   async function gh(path){
-    const r = await fetch("https://api.github.com/repos/"+REPO+path, {headers:{Accept:"application/vnd.github+json"}});
+    const { signal, done } = abortAfter(REQUEST_TIMEOUT_MS);
+    let r;
+    try { r = await fetch("https://api.github.com/repos/"+REPO+path, {headers:{Accept:"application/vnd.github+json"}, signal}); }
+    finally { done(); }
     const rem = r.headers.get("X-RateLimit-Remaining");
     if(rem !== null) ghRemaining = Number(rem);
     if(r.status === 403 || r.status === 429){
@@ -373,9 +377,11 @@
   async function refresh(){
     let next = null, answered = false;
     try{
-      const r = await fetch("../tasks/tasks.json?_="+Date.now(),{cache:"no-store"});
+      const { signal, done } = abortAfter(REQUEST_TIMEOUT_MS);
+      let r;
+      try { r = await fetch("../tasks/tasks.json?_="+Date.now(),{cache:"no-store", signal}); } finally { done(); }
       if(r.ok){ answered = true; next = normalizeBoard(await r.json()); }
-    }catch(e){ /* offline, or opened from file:// — the embedded copy is expected */ }
+    }catch(e){ /* offline, timed out, or opened from file:// — the embedded copy is expected */ }
     if(next){ DATA = next; boardNote(""); }
     else if(answered) boardNote("Live task list looked wrong — showing the copy built into this page.");
     else boardNote("");            // unreachable is normal off a server; don't nag

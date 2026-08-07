@@ -275,7 +275,7 @@
   // lives in orchard-data.js so it can be unit-tested — see tests/.
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
           networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
-          listView, ringSet, legendRows } = window.OrchardData;
+          listView, ringSet, legendRows, abortAfter, withDeadline } = window.OrchardData;
   let TREES = [];   // the Trees currently shown, in list order
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
@@ -283,15 +283,28 @@
   let world=null;      // the ONE Globe instance — built once, then only fed new data
   let loading=false;   // guards against overlapping refreshes on a slow network
 
-  async function getJSON(path){ const r=await fetch(ORACLE+path,{cache:"no-store"}); if(!r.ok) throw new Error(r.status); return r.json(); }
+  // Deadlines, both well under the 60s refresh interval. A request that
+  // connects and never answers used to latch the in-flight guard forever —
+  // the loop then stayed dead even after the oracle recovered.
+  const REQUEST_TIMEOUT_MS = 8000;
+  const REFRESH_CEILING_MS = 20000;
+
+  async function getJSON(path){
+    const { signal, done } = abortAfter(REQUEST_TIMEOUT_MS);
+    try {
+      const r = await fetch(ORACLE+path,{cache:"no-store", signal});
+      if(!r.ok) throw new Error(r.status);
+      return await r.json();
+    } finally { done(); }
+  }
 
   async function load(){
     if(loading) return;          // a refresh is already in flight
     loading=true;
-    // Nothing the oracle can return may break the loop. A thrown refresh would
-    // become an unhandled rejection on the setInterval path and leave the page
-    // showing old numbers while still claiming to be live.
-    try { await refresh(); dataNote(""); }        // success clears any stale warning
+    // Nothing the oracle can return — or fail to return — may break the loop.
+    // The ceiling is the backstop: whatever happens inside, the guard is
+    // released and the next tick gets its chance.
+    try { await withDeadline(refresh(), REFRESH_CEILING_MS); dataNote(""); }
     catch(e){ dataNote("Couldn't read the network just now — showing the last known data."); }
     finally { loading=false; }
   }

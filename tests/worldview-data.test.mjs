@@ -533,3 +533,52 @@ test('the four live Trees still classify exactly as before', () => {
   assert.deepEqual(fruitsFor([]), []);
   assert.equal(classify('ds18b20').color, '#ff9f2e');
 });
+
+// ---------------------------------------------------------------------------
+// Deadlines. A request that connects and never answers used to latch the
+// in-flight guard permanently — the refresh loop then stayed dead even after
+// the oracle recovered.
+// ---------------------------------------------------------------------------
+const { abortAfter, withDeadline } = OrchardData;
+
+test('abortAfter aborts its signal when the deadline passes', async () => {
+  const { signal } = abortAfter(5);
+  assert.equal(signal.aborted, false);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(signal.aborted, true);
+});
+
+test('abortAfter can be cancelled so a fast response leaves no timer armed', async () => {
+  const { signal, done } = abortAfter(5);
+  done();
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(signal.aborted, false, 'a cancelled deadline must not fire');
+});
+
+test('withDeadline resolves normally when the work finishes in time', async () => {
+  assert.equal(await withDeadline(Promise.resolve('ok'), 50), 'ok');
+  assert.equal(await withDeadline(new Promise((r) => setTimeout(() => r(7), 5)), 100), 7);
+});
+
+test('withDeadline rejects rather than hanging forever', async () => {
+  const neverSettles = new Promise(() => {});
+  await assert.rejects(() => withDeadline(neverSettles, 10), /deadline exceeded/);
+});
+
+test('withDeadline reports the timeout without swallowing it', async () => {
+  let told = 0;
+  await assert.rejects(() => withDeadline(new Promise(() => {}), 10, () => { told++; }), /deadline exceeded/);
+  assert.equal(told, 1);
+  // A throwing reporter must not mask the timeout.
+  await assert.rejects(() => withDeadline(new Promise(() => {}), 10, () => { throw new Error('reporter broke'); }), /deadline exceeded/);
+});
+
+test('withDeadline passes a real failure through unchanged', async () => {
+  await assert.rejects(() => withDeadline(Promise.reject(new Error('HTTP 500')), 100), /HTTP 500/);
+});
+
+test('a settled promise leaves no pending deadline behind', async () => {
+  // If the timer were left armed, node --test would hang on this file.
+  await withDeadline(Promise.resolve(1), 5000);
+  assert.ok(true);
+});

@@ -124,6 +124,33 @@
     return 'just now';
   }
 
+  // ---- Deadlines -----------------------------------------------------------
+  // A request that connects and then never answers is worse than one that
+  // fails: it hangs forever, and anything guarding against overlapping
+  // refreshes stays latched. Every network call gets a deadline.
+  function abortAfter(ms) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error('timeout after ' + ms + 'ms')), ms);
+    return { signal: controller.signal, done: () => clearTimeout(timer), controller };
+  }
+
+  /**
+   * Resolve `promise`, or give up after `ms`. The underlying work is left to
+   * finish or not — the point is that the caller is never stuck.
+   */
+  function withDeadline(promise, ms, onTimeout) {
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise).finally(() => clearTimeout(timer)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          if (onTimeout) { try { onTimeout(); } catch (e) { /* reporting must not mask the timeout */ } }
+          reject(new Error('deadline exceeded after ' + ms + 'ms'));
+        }, ms);
+      }),
+    ]);
+  }
+
   // ---- Response shape validation ------------------------------------------
   // HTTP 200 is not a promise about the body. An oracle that answers
   // {"error": "..."} , a proxy that answers HTML, or a field that changes type
@@ -266,7 +293,7 @@
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
     STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
-    normalizeNodes, normalizeStats, lookup,
+    normalizeNodes, normalizeStats, lookup, abortAfter, withDeadline,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,
   };
