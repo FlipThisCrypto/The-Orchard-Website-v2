@@ -42,14 +42,24 @@ Enforced by `tests/worldview-data.test.mjs`.
 | **Withered — recovering** | ❌ | needs Season history + a recovery marker | — |
 | **Withered — abandoned** | ❌ | needs multi-Season absence or an owner/admin mark | — |
 
-`ahead` is not one of the model's states. It exists because two live Trees currently carry
-timestamps ~4 h ahead of the oracle's own clock, and both alternatives were false: reading them as
-fresh made them permanently "healthy", and coercing them to `new` claimed they had never harvested.
-Surfacing the anomaly is the honest third option.
+`ahead` is not one of the model's states. It guards against a timestamp genuinely later than the
+oracle's own clock, where both alternatives would be false: reading it as fresh marks the Tree
+permanently healthy, and coercing it to `new` claims it never harvested. It does **not** fire on the
+current network.
 
-Corrections logged here so the record is straight: until 2026-08-07 a Tree that had **never
-reported** rendered as *healthy*, and an earlier note in this file claimed the oracle exposed only
-one signal — it exposes both, and `normalizeNodes` was silently dropping the heartbeat.
+**Timestamp format.** The oracle emits node timestamps with no timezone marker
+(`2026-07-26T23:47:51.359575`) while `as_of_utc` carries `+00:00`. ECMAScript parses an offset-less
+date-time as *local* time, so these must be read as UTC explicitly — otherwise every freshness
+judgement becomes a function of the visitor's timezone.
+
+Corrections logged here so the record is straight:
+- Until 2026-08-07 a Tree that had **never reported** rendered as *healthy*.
+- An earlier note in this file claimed the oracle exposed only one signal. It exposes two, and
+  `normalizeNodes` was silently dropping the heartbeat.
+- An earlier note here said two live Trees carried timestamps ~4 h ahead of the oracle. **That was
+  wrong** — it was this page parsing naive timestamps in the visitor's local zone (UTC−4 at the time
+  of writing). With UTC parsing the network reads 2 reporting / 2 offline, which matches the
+  oracle's own `trees_active_24h: 2`.
 
 ## Signal rules & precedence
 Every state traces to a real signal (heartbeat/check-in · last signed Harvest · current/recent Season

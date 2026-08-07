@@ -142,13 +142,30 @@
   const SKEW_TOLERANCE_H = 0.25;
 
   /**
+   * Parse a timestamp from the oracle.
+   *
+   * The oracle emits node timestamps with NO timezone marker
+   * ("2026-07-26T23:47:51.359575"), and ECMAScript parses an offset-less
+   * date-time as LOCAL time. The oracle is a UTC service — its own field is
+   * literally called as_of_utc — so reading those naive strings locally made
+   * every freshness judgement a function of where the visitor was sitting:
+   * correct in London, 4 hours wrong in New York, 9 in Tokyo. Strings that do
+   * carry an offset are left alone.
+   */
+  function parseOracleTime(v) {
+    if (typeof v !== 'string' || !v) return NaN;
+    const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(v.trim());
+    return Date.parse(hasZone ? v : v.trim() + 'Z');
+  }
+
+  /**
    * The clock to judge freshness against. /network/stats publishes as_of_utc,
    * and comparing the oracle's timestamps to the VISITOR's clock is what makes
    * a correct Tree look either stale or future-dated depending on whose watch
    * is wrong. Falls back to the local clock only when the oracle doesn't say.
    */
   function referenceNow(stats, fallback = Date.now()) {
-    const t = stats && stats.as_of_utc ? Date.parse(stats.as_of_utc) : NaN;
+    const t = stats && stats.as_of_utc ? parseOracleTime(stats.as_of_utc) : NaN;
     return Number.isFinite(t) ? t : fallback;
   }
 
@@ -162,7 +179,7 @@
     if (!n) return 'new';
     const hours = (t) => {
       if (!t) return null;
-      const h = (now - new Date(t)) / 3600000;
+      const h = (now - parseOracleTime(t)) / 3600000;
       return Number.isFinite(h) ? h : null;
     };
     const reading = hours(n.last_reading_at);
@@ -186,7 +203,7 @@
     // "recently" about something that never happened is a lie, and it used to
     // sit directly under "planted, no Harvest yet" in the same panel.
     if (!d) return 'never';
-    const s = (now - new Date(d)) / 1000;
+    const s = (now - parseOracleTime(d)) / 1000;
     if (!Number.isFinite(s)) return 'unknown';
     if (s < -SKEW_TOLERANCE_H * 3600) return 'ahead of the oracle’s clock';
     for (const [n, l] of [[86400, 'd'], [3600, 'h'], [60, 'm']]) {
@@ -425,7 +442,7 @@
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
     STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, referenceNow, ago, treeSummary, networkSummary, composition,
-    normalizeNodes, normalizeStats, STAT_FIELDS, showCount, lookup, abortAfter, withDeadline,
+    normalizeNodes, normalizeStats, STAT_FIELDS, showCount, lookup, abortAfter, withDeadline, parseOracleTime,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,
   };

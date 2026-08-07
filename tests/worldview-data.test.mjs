@@ -858,3 +858,53 @@ test('the summary degrades honestly when the oracle says less', () => {
   assert.match(partial, /^9 Trees, an unknown number/);
   assert.ok(!/Season/.test(partial), 'must not invent a Season it was not told');
 });
+
+// ---------------------------------------------------------------------------
+// Timezone. The oracle emits node timestamps with no offset, and ECMAScript
+// parses those as LOCAL time — so every freshness judgement was a function of
+// where the visitor was sitting. These tests pin UTC.
+// ---------------------------------------------------------------------------
+const { parseOracleTime } = OrchardData;
+
+test('an offset-less oracle timestamp is read as UTC, not local', () => {
+  // The exact shape the oracle sends.
+  assert.equal(parseOracleTime('2026-07-26T23:47:51.359575'), Date.parse('2026-07-26T23:47:51.359575Z'));
+  assert.equal(parseOracleTime('2026-06-16T09:11:04.370897'), Date.parse('2026-06-16T09:11:04.370897Z'));
+});
+
+test('a timestamp that does carry an offset is honoured as sent', () => {
+  assert.equal(parseOracleTime('2026-08-07T11:30:14.598152+00:00'), Date.parse('2026-08-07T11:30:14.598152+00:00'));
+  assert.equal(parseOracleTime('2026-08-07T11:30:14Z'), Date.parse('2026-08-07T11:30:14Z'));
+  assert.equal(parseOracleTime('2026-08-07T07:30:14-04:00'), Date.parse('2026-08-07T11:30:14Z'));
+});
+
+test('node state does not depend on the visitor’s timezone', () => {
+  // Same payload, same answer, wherever it is read. Before this, a Tree that
+  // was healthy in London was "4 hours in the future" in New York.
+  const asOf = '2026-08-07T12:00:00+00:00';
+  const now = referenceNow({ as_of_utc: asOf });
+  const node = { last_seen_at: '2026-08-07T11:30:00.000000', last_reading_at: '2026-08-07T11:30:00.000000' };
+  assert.equal(stateFrom(node, now), 'healthy');
+  assert.equal(ago(node.last_reading_at, now), '30m ago');
+  // A four-hour local-time misreading is exactly what used to happen.
+  assert.notEqual(stateFrom(node, now), 'ahead');
+});
+
+test('the ahead state still guards a genuinely future timestamp', () => {
+  const now = referenceNow({ as_of_utc: '2026-08-07T12:00:00+00:00' });
+  assert.equal(stateFrom({ last_seen_at: '2026-08-07T18:00:00', last_reading_at: '2026-08-07T18:00:00' }, now), 'ahead');
+});
+
+test('parseOracleTime rejects what is not a timestamp', () => {
+  for (const v of [null, undefined, '', 42, {}, [], 'nonsense']) {
+    assert.ok(Number.isNaN(parseOracleTime(v)), `should not parse ${JSON.stringify(v)}`);
+  }
+});
+
+test('the real oracle payload shape resolves to sensible states', () => {
+  // Captured from the live oracle: two Trees reporting, two silent 11 days.
+  const asOf = '2026-08-07T11:38:41+00:00';
+  const now = referenceNow({ as_of_utc: asOf });
+  assert.equal(stateFrom({ last_seen_at: '2026-08-07T11:38:00.000000', last_reading_at: '2026-08-07T11:38:00.000000' }, now), 'healthy');
+  assert.equal(stateFrom({ last_seen_at: '2026-07-26T23:47:51.359575', last_reading_at: '2026-07-26T23:47:51.359575' }, now), 'offline');
+});
