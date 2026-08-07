@@ -15,6 +15,12 @@ worldview integration — see the integration notes below.
   precedence over the declared location automatically.
 - Drag to rotate (no auto-spin), click a Tree for its Explorer panel. Honors `prefers-reduced-motion`
   and falls back to a 2D list with no WebGL.
+- **Keyboard and screen-reader accessible.** The globe is a canvas and can't describe itself, so
+  **Browse Trees** opens the same Trees as a focusable list — choose one and the globe flies to it
+  and opens the same panel. Both panels are labelled dialogs: focus moves in, `Esc` closes, focus
+  returns to what opened them, and while closed they're `inert` (out of the tab order). Stat updates
+  are announced through a polite live region. A refresh never steals focus or re-renders the list
+  unless the data actually changed.
 - **Refreshes every 60s in place** — new oracle data is fed into the existing globe, so your camera
   position is never disturbed. Polling pauses while the tab is hidden and catches up on return.
 

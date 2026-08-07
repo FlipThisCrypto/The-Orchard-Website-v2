@@ -100,5 +100,30 @@
     return 'just now';
   }
 
-  return { esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, STATE_COLOR, stateFrom, ago };
+  // ---- Text for assistive tech --------------------------------------------
+  // The globe is a canvas: it cannot describe itself. These build the text
+  // that the Tree list, the no-WebGL fallback and the live region all use, so
+  // a screen reader gets exactly what a sighted visitor sees. Returned as
+  // plain text — callers still escape before it reaches HTML.
+  function treeSummary(p) {
+    const fruits = (p.fruits || []).map((f) => f.emoji + ' ' + f.type).join(' · ');
+    return [
+      (p.short || '') + '…',
+      p.region,
+      p.state,
+      fruits || 'online · no sensors yet',
+    ].filter(Boolean).join(' · ');
+  }
+
+  function networkSummary(stats, placed, live) {
+    const trees = stats && stats.trees_registered != null ? stats.trees_registered : placed;
+    const readings = stats && stats.readings_total != null ? stats.readings_total : 0;
+    return `${trees} Trees, ${Number(readings).toLocaleString('en-US')} harvested readings, ` +
+      `${placed} shown on the map. Data is ${live ? 'live' : 'from a snapshot'}.`;
+  }
+
+  return {
+    esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor,
+    STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
+  };
 });

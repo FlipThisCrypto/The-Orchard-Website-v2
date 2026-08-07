@@ -4,7 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import OrchardData from '../worldview/orchard-data.js';
 
-const { esc, isGeohash, isNftId, ghCenter, classify, fruitsFor, stateFrom, ago, STATE_COLOR } = OrchardData;
+const { esc, isGeohash, isNftId, ghCenter, classify, fruitsFor, stateFrom, ago, STATE_COLOR,
+        treeSummary, networkSummary } = OrchardData;
 
 // A real Orchard Pass id from the live network (public, on-chain).
 const REAL_PASS = 'nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y';
@@ -197,4 +198,46 @@ test('ago renders human-readable ages', () => {
   assert.equal(ago(hoursAgo(50), NOW), '2d ago');
   assert.equal(ago(null, NOW), 'recently');
   assert.equal(ago('not-a-date', NOW), 'recently');
+});
+
+// ---------------------------------------------------------------------------
+// treeSummary / networkSummary — what a screen reader is given in place of the
+// canvas. If these go empty or wrong, the page has no accessible content.
+// ---------------------------------------------------------------------------
+const TREE = {
+  short: '0C59BF4E', region: 'Shepherdsville, KY (approx.)', state: 'healthy',
+  fruits: [{ type: 'Temperature', emoji: '🍊' }, { type: 'Pressure', emoji: '🍐' }],
+};
+
+test('treeSummary names the Tree, where it is, how it is, and what it senses', () => {
+  assert.equal(
+    treeSummary(TREE),
+    '0C59BF4E… · Shepherdsville, KY (approx.) · healthy · 🍊 Temperature · 🍐 Pressure'
+  );
+});
+
+test('treeSummary says something useful for a Tree with no sensors', () => {
+  assert.equal(
+    treeSummary({ ...TREE, fruits: [] }),
+    '0C59BF4E… · Shepherdsville, KY (approx.) · healthy · online · no sensors yet'
+  );
+});
+
+test('treeSummary never returns an empty label', () => {
+  for (const p of [{}, { fruits: null }, { short: '', region: '', state: '' }]) {
+    assert.ok(treeSummary(p).trim().length > 0, `empty label for ${JSON.stringify(p)}`);
+  }
+});
+
+test('networkSummary reads as a sentence and distinguishes live from snapshot', () => {
+  assert.equal(
+    networkSummary({ trees_registered: 4, readings_total: 11605 }, 4, true),
+    '4 Trees, 11,605 harvested readings, 4 shown on the map. Data is live.'
+  );
+  assert.match(networkSummary({ trees_registered: 4, readings_total: 0 }, 2, false), /snapshot\.$/);
+});
+
+test('networkSummary falls back to the placed count when stats are missing', () => {
+  assert.equal(networkSummary(null, 3, true), '3 Trees, 0 harvested readings, 3 shown on the map. Data is live.');
+  assert.equal(networkSummary({}, 0, false), '0 Trees, 0 harvested readings, 0 shown on the map. Data is from a snapshot.');
 });
