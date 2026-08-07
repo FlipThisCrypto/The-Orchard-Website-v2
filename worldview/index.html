@@ -440,7 +440,7 @@
       : items.map((p,i)=>{
           const dot = `<i class="tl-dot" style="background:${esc(STATE_COLOR[p.state]||"#76907f")}"></i>`;
           const body = `<span class="tl-txt"><span class="tl-id">${esc(p.short)}…</span>
-            <span class="tl-meta">${esc(p.region)} · ${esc(p.state)} · ${esc((p.fruits||[]).map(f=>f.emoji+" "+f.type).join(" · "))||"online · no sensors yet"}</span></span>`;
+            <span class="tl-meta">${esc(p.region)} · ${esc(shapeFor(p.state).label)} · ${esc((p.fruits||[]).map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</span></span>`;
           return `<li><button type="button" data-i="${i}" aria-label="${esc(treeSummary(p))}">${dot}${body}</button></li>`;
         }).join("");
 
@@ -492,7 +492,7 @@
       // quiet Tree is distinguishable with no animation at all.
       .pointsData(pts).pointLat("lat").pointLng("lng").pointColor("color")
       .pointAltitude(p=>shapeFor(p.state).altitude).pointRadius(p=>shapeFor(p.state).radius).pointResolution(18)
-      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)} · ${esc(shapeFor(p.state).label)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"online · no sensors yet"}</div>`)
+      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)} · ${esc(shapeFor(p.state).label)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</div>`)
       .onPointClick(p=>showPanel(p));   // globe.gl passes (point, event) — don't leak the event in as an opener
     if(!reduce){ world.ringsData(applyRingCap(pts)).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
     const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
@@ -556,12 +556,12 @@
     $("p-title").textContent = "Tree";
     $("p-reg").textContent = "📍 " + p.region;
     const sc = STATE_COLOR[p.state]||"#76907f";
-    $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${esc(p.state)}`;
+    $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${esc(shapeFor(p.state).label)}`;
     $("p-fw").textContent = p.fw || "—";
     $("p-last").textContent = ago(p.last);
     $("p-fruits").innerHTML = p.fruits.length
       ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${esc(f.color)}"></i>${esc(f.emoji)} ${esc(f.type)}</span>`).join("")
-      : `<span class="fruit">🌱 online · no sensors reporting yet</span>`;
+      : `<span class="fruit">🌱 no sensors reporting</span>`;
     // Only a well-formed Chia NFT id becomes a link; anything else is inert text.
     const passLink = isNftId(p.pass)
       ? `<a href="https://mintgarden.io/nfts/${encodeURIComponent(p.pass)}" target="_blank" rel="noopener">${esc(p.pass.slice(0,14))}… ↗</a>`

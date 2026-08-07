@@ -179,15 +179,16 @@ test('stateFrom applies the 2h / 26h freshness thresholds', () => {
   assert.equal(stateFrom({ last_reading_at: hoursAgo(24 * 30) }, NOW), 'offline');
 });
 
-test('stateFrom degrades safely on missing or unparseable timestamps', () => {
-  assert.equal(stateFrom({ last_reading_at: null }, NOW), 'healthy');
-  assert.equal(stateFrom({}, NOW), 'healthy');
-  assert.equal(stateFrom(null, NOW), 'healthy');
-  assert.equal(stateFrom({ last_reading_at: 'not-a-date' }, NOW), 'healthy');
+test('a Tree that has never reported is never called healthy', () => {
+  // The canonical model calls this new growth and says outright: don't imply
+  // stable uptime. Three of the four live Trees are in exactly this state.
+  for (const n of [{ last_reading_at: null }, {}, null, { last_reading_at: 'not-a-date' }]) {
+    assert.equal(stateFrom(n, NOW), 'new', `${JSON.stringify(n)} must not read as healthy`);
+  }
 });
 
 test('every state stateFrom can return has a colour', () => {
-  const states = ['healthy', 'idle', 'offline'];
+  const states = ['new', 'healthy', 'idle', 'offline'];
   for (const s of states) assert.ok(STATE_COLOR[s], `no colour for ${s}`);
 });
 
@@ -212,14 +213,14 @@ const TREE = {
 test('treeSummary names the Tree, where it is, how it is, and what it senses', () => {
   assert.equal(
     treeSummary(TREE),
-    '0C59BF4E… · Shepherdsville, KY (approx.) · healthy · 🍊 Temperature · 🍐 Pressure'
+    '0C59BF4E… · Shepherdsville, KY (approx.) · reporting · 🍊 Temperature · 🍐 Pressure'
   );
 });
 
 test('treeSummary says something useful for a Tree with no sensors', () => {
   assert.equal(
     treeSummary({ ...TREE, fruits: [] }),
-    '0C59BF4E… · Shepherdsville, KY (approx.) · healthy · online · no sensors yet'
+    '0C59BF4E… · Shepherdsville, KY (approx.) · reporting · no sensors reporting'
   );
 });
 
@@ -591,11 +592,11 @@ test('a settled promise leaves no pending deadline behind', async () => {
 const { shapeFor, STATE_SHAPE } = OrchardData;
 
 test('every state stateFrom can return has a distinct shape', () => {
-  const states = ['healthy', 'idle', 'offline'];
+  const states = ['new', 'healthy', 'idle', 'offline'];
   const radii = states.map((s) => shapeFor(s).radius);
   const alts = states.map((s) => shapeFor(s).altitude);
-  assert.equal(new Set(radii).size, 3, 'two states share a radius — they would look identical');
-  assert.equal(new Set(alts).size, 3, 'two states share an altitude');
+  assert.equal(new Set(radii).size, states.length, 'two states share a radius — they would look identical');
+  assert.equal(new Set(alts).size, states.length, 'two states share an altitude');
 });
 
 test('less-healthy Trees are drawn smaller and flatter, monotonically', () => {
@@ -606,11 +607,11 @@ test('less-healthy Trees are drawn smaller and flatter, monotonically', () => {
 });
 
 test('every state has a plain-language label for the hover card', () => {
-  for (const s of ['healthy', 'idle', 'offline']) {
+  for (const s of ['new', 'healthy', 'idle', 'offline']) {
     assert.match(shapeFor(s).label, /\w/);
-    assert.ok(!/^(healthy|idle|offline)$/.test(shapeFor(s).label), `${s} label should read as English, not repeat the key`);
+    assert.ok(!/^(new|healthy|idle|offline)$/.test(shapeFor(s).label), `${s} label should read as English, not repeat the key`);
   }
-  assert.equal(new Set(Object.values(STATE_SHAPE).map((v) => v.label)).size, 3);
+  assert.equal(new Set(Object.values(STATE_SHAPE).map((v) => v.label)).size, 4);
 });
 
 test('an unknown state degrades to the least-claiming shape', () => {
@@ -625,4 +626,24 @@ test('shapes stay inside sane globe.gl ranges', () => {
     assert.ok(v.radius > 0 && v.radius <= 1, `radius ${v.radius}`);
     assert.ok(v.altitude > 0 && v.altitude <= 0.1, `altitude ${v.altitude}`);
   }
+});
+
+test('only the states the oracle can actually justify are implemented', () => {
+  // The canonical model has eight. The API exposes one signal, so faking the
+  // rest would be inventing confidence — the thing the model forbids.
+  const implemented = Object.keys(STATE_SHAPE).sort();
+  assert.deepEqual(implemented, ['healthy', 'idle', 'new', 'offline']);
+  for (const s of implemented) assert.ok(STATE_COLOR[s], `${s} has no colour`);
+});
+
+test('the four states are reachable from real timestamps, in order', () => {
+  assert.equal(stateFrom({ last_reading_at: null }, NOW), 'new');
+  assert.equal(stateFrom({ last_reading_at: hoursAgo(1) }, NOW), 'healthy');
+  assert.equal(stateFrom({ last_reading_at: hoursAgo(10) }, NOW), 'idle');
+  assert.equal(stateFrom({ last_reading_at: hoursAgo(48) }, NOW), 'offline');
+});
+
+test('a never-reported Tree is drawn smaller than a reporting one', () => {
+  assert.ok(shapeFor('new').radius < shapeFor('healthy').radius);
+  assert.match(shapeFor('new').label, /no Harvest yet/);
 });

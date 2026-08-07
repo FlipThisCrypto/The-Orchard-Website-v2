@@ -88,7 +88,10 @@
   function legendRows() {
     return FRUITS.map((f) => ({ emoji: f.emoji, color: f.color, label: f.type, hint: f.legend }))
       .concat([{ emoji: UNKNOWN_FRUIT.emoji, color: UNKNOWN_FRUIT.color, label: 'Other sensor', hint: UNKNOWN_FRUIT.legend }])
-      .concat([{ emoji: '🌱', color: '#4ade80', label: 'Online · no sensors yet', hint: 'a Tree reporting in with nothing to harvest yet' }]);
+      .concat([
+        { emoji: '🌱', color: STATE_COLOR.new, label: 'Planted · no Harvest yet', hint: 'registered, but it has never sent a reading' },
+        { emoji: '○', color: STATE_COLOR.offline, label: 'Not reporting', hint: 'no reading for more than a day — drawn smaller and flatter' },
+      ]);
   }
 
   function fruitsFor(sensors) {
@@ -103,13 +106,22 @@
   // ---- Node state ---------------------------------------------------------
   // State is a different visual language from fruit: it says whether a Tree is
   // reporting, not what it senses.
-  const STATE_COLOR = { healthy: '#4ade80', idle: '#2bd4d4', offline: '#76907f' };
+  //
+  // The canonical model (docs/product/node-states-gamification.md) defines
+  // eight states. The oracle exposes ONE signal — last_reading_at — so only
+  // the four below are honestly derivable. Failed, stale-vs-offline,
+  // withered-recovering and withered-abandoned need signals the API does not
+  // provide (validation status, heartbeat separate from Harvest, admin
+  // markers) and are deliberately not faked. The model's own precedence rule
+  // is that a missing signal shows "unknown", never invented confidence.
+  const STATE_COLOR = { new: '#a3e635', healthy: '#4ade80', idle: '#2bd4d4', offline: '#76907f' };
 
   // How a Tree's state shows on the globe WITHOUT motion. The spec's rule is
   // "state via shape/label/badge": colour already carries the data class, so
   // state gets size and height instead. A quiet Tree sits smaller and flatter
   // than a reporting one, which reads at a glance and needs no animation.
   const STATE_SHAPE = {
+    new:     { radius: 0.32, altitude: 0.0060, label: 'planted, no Harvest yet' },
     healthy: { radius: 0.50, altitude: 0.0120, label: 'reporting' },
     idle:    { radius: 0.38, altitude: 0.0075, label: 'quiet for a while' },
     offline: { radius: 0.26, altitude: 0.0035, label: 'not reporting' },
@@ -117,9 +129,12 @@
   const shapeFor = (state) => STATE_SHAPE[state] || STATE_SHAPE.offline;
 
   function stateFrom(n, now = Date.now()) {
-    if (!n || !n.last_reading_at) return 'healthy'; // listed but never reported
+    // Registered but never reported. The model calls this new growth and says
+    // outright: don't imply stable uptime. Calling it "healthy" was a claim
+    // about a Tree that has never sent anything.
+    if (!n || !n.last_reading_at) return 'new';
     const age = (now - new Date(n.last_reading_at)) / 3600000;
-    if (!Number.isFinite(age)) return 'healthy';
+    if (!Number.isFinite(age)) return 'new';        // unparseable timestamp = no usable signal
     if (age < 2) return 'healthy';
     if (age < 26) return 'idle';
     return 'offline';
@@ -285,8 +300,10 @@
     return [
       (p.short || '') + '…',
       p.region,
-      p.state,
-      fruits || 'online · no sensors yet',
+      // The plain-language label, not the internal key: "planted, no Harvest
+      // yet" tells a listener something; "new" does not.
+      p.state ? shapeFor(p.state).label : null,
+      fruits || 'no sensors reporting',
     ].filter(Boolean).join(' · ');
   }
 

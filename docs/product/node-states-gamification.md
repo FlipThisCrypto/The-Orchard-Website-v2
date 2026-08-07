@@ -22,6 +22,28 @@ that the network is more alive than it is.
 | **Withered — recovering** | Was offline/failed, heartbeat/partial Harvests resumed, confidence not rebuilt | Coming back, trust not fully restored | Withered trunk brightening, recovery badge, minimal motion | Fruit returns only for classes with valid recent Harvests; old fruit stays muted |
 | **Withered — abandoned** | Long absence across Seasons, no recovery, or owner/admin-marked | Historical, not part of the live network | Bare/dormant, low-contrast, only at close zoom/filters | Fruit hidden by default / historical mode; **not** counted as live density |
 
+## What `worldview/` implements today (and what it deliberately doesn't)
+
+The oracle exposes **one** signal for this model: `last_reading_at`. Four states are honestly
+derivable from it; the rest need signals the API doesn't provide, and the precedence rule above —
+*missing signal → never invented confidence* — says to leave them unimplemented rather than guess.
+Enforced by `tests/worldview-data.test.mjs`.
+
+| State | Live? | Derived from | On the globe |
+|---|---|---|---|
+| **New growth** | ✅ `new` | registered, `last_reading_at` null (or unparseable) | small, low, `#a3e635`, "planted, no Harvest yet" |
+| **Healthy** | ✅ | last Harvest < 2 h | largest, tallest, `#4ade80`, "reporting" |
+| **Idle** | ✅ | last Harvest 2–26 h | mid, `#2bd4d4`, "quiet for a while" |
+| **Offline** | ✅ | last Harvest > 26 h | smallest, flattest, `#76907f`, "not reporting" |
+| **Stale-data** | ❌ | needs heartbeat separate from Harvest recency | — |
+| **Failed** | ❌ | needs validation status / fault reporting | — |
+| **Withered — recovering** | ❌ | needs Season history + recovery marker | — |
+| **Withered — abandoned** | ❌ | needs multi-Season absence or an owner/admin mark | — |
+
+Until 2026-08-07 a Tree that had **never reported** was rendered as *healthy* — including three of
+the four live Trees. That contradicted both this table's "don't imply stable uptime" and the
+precedence rule; it is now `new`.
+
 ## Signal rules & precedence
 Every state traces to a real signal (heartbeat/check-in · last signed Harvest · current/recent Season
 uptime · device health · validation status · owner/admin recovery marker). Missing signal → show
