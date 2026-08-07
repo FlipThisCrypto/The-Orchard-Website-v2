@@ -340,6 +340,7 @@
     // The page is useful now — stats and the Tree list are painted above. The
     // globe is a bonus layer that arrives when (and if) the engine does.
     if(!webglOK()){ renderFallback(pts); return; }     // genuinely no WebGL — not "engine still loading"
+    if(contextLost) return;                            // don't feed data into a dead GPU context
     if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
   }
 
@@ -396,7 +397,7 @@
     if(!reduce) world.ringsData(pts);
   }
 
-  function renderGlobe(pts){
+  function renderGlobe(pts, restoreTo){
     world = Globe()($("globe"))
       .globeImageUrl("vendor/earth-night.jpg").backgroundColor("rgba(0,0,0,0)")
       .showAtmosphere(true).atmosphereColor("#2bd4d4").atmosphereAltitude(0.2)
@@ -406,9 +407,59 @@
       .onPointClick(p=>showPanel(p));   // globe.gl passes (point, event) — don't leak the event in as an opener
     if(!reduce){ world.ringsData(pts).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
     const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
+    if(!resizeBound){ addEventListener("resize",()=>world && world.width(innerWidth).height(innerHeight)); resizeBound=true; }
+    watchContextLoss();
+    if(restoreTo){                       // rebuilt after a GPU context loss
+      world.pointOfView(restoreTo, 0);   // put the visitor back where they were
+      return;
+    }
     world.pointOfView({lat:30,lng:-85,altitude:2.3},0);
-    addEventListener("resize",()=>world.width(innerWidth).height(innerHeight));
     if(!reduce) setTimeout(()=>world.pointOfView({lat:38,lng:-85.7,altitude:1.4},2600),900);
+  }
+
+  // ---- GPU context loss ----------------------------------------------------
+  // A lost WebGL context is ordinary: a backgrounded mobile tab under memory
+  // pressure, a driver reset, a laptop switching GPUs. Before this the globe
+  // simply went black forever while the page carried on reporting "live".
+  let resizeBound = false, contextLost = false, tearingDown = false;
+  function watchContextLoss(){
+    const canvas = $("globe").querySelector("canvas");
+    if(!canvas || canvas.__orchardWatched) return;
+    canvas.__orchardWatched = true;
+    canvas.addEventListener("webglcontextlost", ()=>{
+      // Ignore the loss we cause ourselves: teardown calls forceContextLoss(),
+      // and an old, detached canvas must not re-flag a freshly rebuilt globe.
+      if(tearingDown || canvas !== $("globe").querySelector("canvas")) return;
+      contextLost = true;
+      note("The browser dropped the 3D view (this happens on low memory). Every Tree is still listed — or reload the globe.");
+      $("loadglobe").textContent = "🌍 Reload the globe";
+      $("loadglobe").hidden = false;
+      $("loadglobe").onclick = ()=>rebuildGlobe();
+    });
+    // Browsers restore the context when they can; three.js already calls
+    // preventDefault() on the loss, which is what makes that possible.
+    canvas.addEventListener("webglcontextrestored", ()=>{ if(contextLost) rebuildGlobe(); });
+  }
+
+  function rebuildGlobe(){
+    const pov = (()=>{ try { return world && world.pointOfView(); } catch(e){ return null; } })();
+    teardownGlobe();
+    contextLost = false;
+    note("");
+    $("loadglobe").hidden = true;
+    if(webglOK() && typeof Globe!=="undefined") renderGlobe(TREES, pov);
+    else note("The 3D globe can't start again in this browser — every Tree is still listed above.");
+  }
+
+  // Dispose properly: an orphaned renderer keeps its context alive, which is
+  // the very thing that causes the browser to start evicting them.
+  function teardownGlobe(){
+    tearingDown = true;
+    try { if(world && world.renderer){ const r = world.renderer(); r.dispose && r.dispose(); r.forceContextLoss && r.forceContextLoss(); } } catch(e){}
+    try { if(world && world._destructor) world._destructor(); } catch(e){}
+    world = null;
+    $("globe").innerHTML = "";
+    tearingDown = false;
   }
 
   function showPanel(p, opener){
