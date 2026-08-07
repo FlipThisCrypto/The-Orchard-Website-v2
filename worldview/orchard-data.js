@@ -105,6 +105,17 @@
   // reporting, not what it senses.
   const STATE_COLOR = { healthy: '#4ade80', idle: '#2bd4d4', offline: '#76907f' };
 
+  // How a Tree's state shows on the globe WITHOUT motion. The spec's rule is
+  // "state via shape/label/badge": colour already carries the data class, so
+  // state gets size and height instead. A quiet Tree sits smaller and flatter
+  // than a reporting one, which reads at a glance and needs no animation.
+  const STATE_SHAPE = {
+    healthy: { radius: 0.50, altitude: 0.0120, label: 'reporting' },
+    idle:    { radius: 0.38, altitude: 0.0075, label: 'quiet for a while' },
+    offline: { radius: 0.26, altitude: 0.0035, label: 'not reporting' },
+  };
+  const shapeFor = (state) => STATE_SHAPE[state] || STATE_SHAPE.offline;
+
   function stateFrom(n, now = Date.now()) {
     if (!n || !n.last_reading_at) return 'healthy'; // listed but never reported
     const age = (now - new Date(n.last_reading_at)) / 3600000;
@@ -292,7 +303,7 @@
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
-    STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
+    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, ago, treeSummary, networkSummary,
     normalizeNodes, normalizeStats, lookup, abortAfter, withDeadline,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,

@@ -582,3 +582,47 @@ test('a settled promise leaves no pending deadline behind', async () => {
   await withDeadline(Promise.resolve(1), 5000);
   assert.ok(true);
 });
+
+// ---------------------------------------------------------------------------
+// State without motion. The budget's rule is "prefers-reduced-motion -> static
+// globe, state via shape/label/badge": colour is already spoken for by the
+// data class, so state has to be carried by size and height.
+// ---------------------------------------------------------------------------
+const { shapeFor, STATE_SHAPE } = OrchardData;
+
+test('every state stateFrom can return has a distinct shape', () => {
+  const states = ['healthy', 'idle', 'offline'];
+  const radii = states.map((s) => shapeFor(s).radius);
+  const alts = states.map((s) => shapeFor(s).altitude);
+  assert.equal(new Set(radii).size, 3, 'two states share a radius — they would look identical');
+  assert.equal(new Set(alts).size, 3, 'two states share an altitude');
+});
+
+test('less-healthy Trees are drawn smaller and flatter, monotonically', () => {
+  assert.ok(shapeFor('healthy').radius > shapeFor('idle').radius);
+  assert.ok(shapeFor('idle').radius > shapeFor('offline').radius);
+  assert.ok(shapeFor('healthy').altitude > shapeFor('idle').altitude);
+  assert.ok(shapeFor('idle').altitude > shapeFor('offline').altitude);
+});
+
+test('every state has a plain-language label for the hover card', () => {
+  for (const s of ['healthy', 'idle', 'offline']) {
+    assert.match(shapeFor(s).label, /\w/);
+    assert.ok(!/^(healthy|idle|offline)$/.test(shapeFor(s).label), `${s} label should read as English, not repeat the key`);
+  }
+  assert.equal(new Set(Object.values(STATE_SHAPE).map((v) => v.label)).size, 3);
+});
+
+test('an unknown state degrades to the least-claiming shape', () => {
+  // Never draw an unknown Tree as confidently healthy.
+  for (const s of [undefined, null, '', 'who-knows', 42]) {
+    assert.deepEqual(shapeFor(s), STATE_SHAPE.offline, `unknown state ${String(s)} should look quiet`);
+  }
+});
+
+test('shapes stay inside sane globe.gl ranges', () => {
+  for (const v of Object.values(STATE_SHAPE)) {
+    assert.ok(v.radius > 0 && v.radius <= 1, `radius ${v.radius}`);
+    assert.ok(v.altitude > 0 && v.altitude <= 0.1, `altitude ${v.altitude}`);
+  }
+});
