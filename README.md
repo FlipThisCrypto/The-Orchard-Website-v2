@@ -114,6 +114,12 @@ anything newly published that the page could be using:
 node scripts/check-oracle.mjs
 ```
 
+And to re-verify SECURITY.md's "no secrets" guarantee over the working tree and all of git history:
+
+```bash
+node scripts/scan-secrets.mjs
+```
+
 Covers the worldview data logic in [`worldview/orchard-data.js`](worldview/orchard-data.js) (fruit
 classification, node-state thresholds, geohash decoding) and the untrusted-input controls that
 `SECURITY.md` promises — escaping and Pass/geohash validation. CI runs the same command on every

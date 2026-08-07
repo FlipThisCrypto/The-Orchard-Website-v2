@@ -16,7 +16,10 @@ and credit you if you'd like. This is a pre-alpha, community project — please 
 ## What this repository does and doesn't contain
 
 - ✅ **No secrets.** There are no private keys, mnemonics, API tokens, passwords, or wallet files in
-  this repo. It was scanned on 2026-06-17 and `.gitignore` is hardened against committing them.
+  this repo — in the working tree **or anywhere in git history**. `.gitignore` is hardened against
+  committing them, and `node scripts/scan-secrets.mjs` re-verifies it over every tracked file and
+  every historical blob (last run clean: 2026-08-07). The two on-chain identifiers it finds — the
+  public Orchard Pass NFT and the $JUICE asset id — are cited on purpose and allowlisted.
 - ✅ **No precise locations.** Tree positions are shown only as **coarse (~5 km) regions / geohash
   cells**, never precise GPS. The PoC's sample coordinates are region-level and representative.
 - ✅ **No privileged endpoints or internals** that would aid an attack. Public service URLs
@@ -66,10 +69,10 @@ Anything a Tree reports — `node_id`, `geohash`, sensor names, `fw_version`, `p
   is a click away from a wallet prompt the visitor didn't mean to trigger.
 - **CSP `object-src 'none'`, `base-uri 'self'`, `form-action 'none'`** — removes the usual ways an
   injection gets amplified (plugin execution, `<base>` hijacking of every relative URL, silent form
-  exfiltration). A strict `script-src` is **not** set yet: the wallet widget dynamically imports
-  WalletConnect from `esm.sh` at click time, and that flow can't be exercised from this repo, so
-  locking scripts down without testing it would risk breaking wallet connect in production. Doing
-  it properly means extracting the inline scripts and enumerating the wallet flow's origins.
+  exfiltration). A strict `script-src` ships **report-only**: the page's own scripts are external
+  now, but the wallet widget dynamically imports WalletConnect from `esm.sh` at click time and that
+  flow can't be exercised from this repo. Connect a wallet once, check the console for violations,
+  then promote the `Content-Security-Policy-Report-Only` line in `worldview/_headers` to enforcing.
 - **`Permissions-Policy: geolocation=()`** — the page cannot ask the browser for a location at all,
   which makes the coarse-location promise structural rather than a code convention.
 - **`nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `COOP: same-origin-allow-popups`.**
@@ -101,4 +104,4 @@ In scope: this repository, the published dashboard/PoC, and the documented data/
 Out of scope: third-party libraries bundled under `prototypes/globe-poc/vendor/`, and the separate
 main project / live services (report those through the main project's channels).
 
-*Last reviewed: 2026-06-17.*
+*Last reviewed: 2026-08-07.*
