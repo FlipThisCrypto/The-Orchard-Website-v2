@@ -19,9 +19,19 @@ Work only from a **Task Brief** ([template](governance/templates/task-brief.md))
 
 ## If you're a human contributor / forker
 - Propose changes via a pull request; the Lead reviews and merges. Keep PRs focused.
-- **Run `node --test` before you push.** No install step — it uses Node's built-in runner, and CI
-  runs the same command. If you touch `worldview/orchard-data.js`, add tests for what you changed;
-  the escaping and id-validation tests are security controls, not decoration.
+- **Install the pre-commit hook.** One command, no dependencies:
+
+  ```bash
+  git config core.hooksPath scripts/hooks
+  ```
+
+  It runs the same gate CI does — tests, generated-board sync, syntax check — and refuses the commit
+  if any fails. `git commit --no-verify` skips it deliberately. This exists because "remember to run
+  the tests" failed in the most instructive way available: the tests *were* run, inside a shell
+  chain that checked whether output appeared rather than whether it said `fail 0`, and the commit
+  landed red. A gate you can pass while failing is not a gate.
+- If you touch `worldview/orchard-data.js`, add tests for what you changed; the escaping and
+  id-validation tests are security controls, not decoration.
 - Don't hand-edit generated files (`tasks/TASKS.md`, `dashboard/data.js`) — edit `tasks/tasks.json`
   and run `node scripts/generate.mjs`. CI fails if you forget (`--check`). Bump the `updated` field
   in `tasks.json` when the task data changes; that date is what the board displays.

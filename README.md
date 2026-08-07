@@ -93,6 +93,13 @@ Zero dependencies — Node's built-in runner, no install step:
 node --test
 ```
 
+Wire the same checks to your commits (tests, board sync, syntax) so a red tree can't be committed
+by accident:
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
 Deployment is separate from CI: the Pages project is **direct-upload**, so a push deploys nothing.
 To check whether production is actually running this repo (byte-exact, plus the security headers):
 

@@ -1,0 +1,46 @@
+#!/bin/sh
+# The same gate CI runs, before the commit exists rather than after.
+#
+# Install:  git config core.hooksPath scripts/hooks
+# Skip once (deliberately, and it will say so):  git commit --no-verify
+#
+# This exists because "run the tests before you push" on the honour system
+# failed in the most instructive way possible: the tests WERE run, inside a
+# shell chain that gated on `grep` finding output rather than on the output
+# saying "fail 0". The commit landed red and CI found it afterwards. A gate
+# you can pass while failing is not a gate.
+set -e
+
+echo "pre-commit: running the CI gate…"
+
+# 1. Unit tests. `node --test` exits non-zero on failure, which is the whole
+#    point — no parsing of its output, no chance of a gate that reads wrong.
+node --test > /dev/null || {
+  echo ""
+  echo "  ✗ Tests failed. Run: node --test"
+  echo ""
+  exit 1
+}
+
+# 2. Generated board files must match tasks.json.
+node scripts/generate.mjs --check || {
+  echo ""
+  echo "  ✗ tasks/TASKS.md and dashboard/data.js are stale."
+  echo "    Run: node scripts/generate.mjs"
+  echo ""
+  exit 1
+}
+
+# 3. Standalone scripts must parse.
+for f in scripts/*.mjs worldview/*.js dashboard/board-data.js; do
+  case "$f" in */vendor/*) continue;; esac
+  [ -f "$f" ] || continue
+  node --check "$f" || {
+    echo ""
+    echo "  ✗ Syntax error in $f"
+    echo ""
+    exit 1
+  }
+done
+
+echo "pre-commit: green."
