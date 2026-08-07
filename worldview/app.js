@@ -144,8 +144,20 @@ const ORACLE = "https://oracle.theorchard.network";
     // The page is useful now — stats and the Tree list are painted above. The
     // globe is a bonus layer that arrives when (and if) the engine does.
     if(!webglOK()){ showWithoutGlobe(); return; }      // genuinely no WebGL — not "engine still loading"
-    if(contextLost) return;                            // don't feed data into a dead GPU context
-    if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
+    if(contextLost || globeFailed) return;             // dead context, or the engine already refused
+    // A failure to BUILD the globe is not a failure to read the network.
+    // Reporting it through the data path blamed the oracle for a browser
+    // problem, and retried the same failing call every 60 seconds.
+    try {
+      if(world) updateGlobe(pts); else if(typeof Globe!=="undefined") renderGlobe(pts);
+    } catch(e) {
+      globeFailed = true;
+      teardownGlobe();
+      note("The 3D globe couldn’t start on this device. Every Tree is still listed — or try again.");
+      $("loadglobe").textContent = "🌍 Try the globe again";
+      $("loadglobe").hidden = false;
+      $("loadglobe").onclick = ()=>{ globeFailed = false; $("loadglobe").hidden = true; note(""); load(); };
+    }
   }
 
   // The one Tree list. Every value is device-reported, so everything goes
@@ -234,7 +246,7 @@ const ORACLE = "https://oracle.theorchard.network";
   // A lost WebGL context is ordinary: a backgrounded mobile tab under memory
   // pressure, a driver reset, a laptop switching GPUs. Before this the globe
   // simply went black forever while the page carried on reporting "live".
-  let resizeBound = false, contextLost = false, tearingDown = false;
+  let resizeBound = false, contextLost = false, tearingDown = false, globeFailed = false;
   function watchContextLoss(){
     const canvas = $("globe").querySelector("canvas");
     if(!canvas || canvas.__orchardWatched) return;
