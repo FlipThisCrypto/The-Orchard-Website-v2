@@ -35,6 +35,19 @@ Trees often live in people's homes and yards. The published data model enforces:
 If you ever see precise location or owner identity exposed anywhere, treat it as a **security bug** and
 report it via the process above.
 
+## Untrusted input (pages that read the oracle)
+
+Anything a Tree reports — `node_id`, `geohash`, sensor names, `fw_version`, `pass_nft_id` — is
+**self-reported by a device and treated as untrusted**. Pages that render it (currently
+`worldview/`) must:
+
+- HTML-escape every such value before it reaches `innerHTML`, a tooltip, or an attribute. These
+  pages are served from the `theorchard.network` zone (shared session cookie) and load the wallet
+  widget, so an injected script would run beside it.
+- **Shape-check identifiers before acting on them** — a `pass_nft_id` becomes a MintGarden link only
+  if it matches a Chia bech32m NFT id; a `geohash` is used only if it's in the geohash alphabet.
+  Anything else renders as inert text.
+
 ## Handling secrets (contributors)
 
 - Never paste a private key, mnemonic, seed phrase, wallet file, or API token into a file, a Task

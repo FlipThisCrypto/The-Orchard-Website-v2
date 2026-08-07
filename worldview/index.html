@@ -219,6 +219,18 @@
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
   const $=(id)=>document.getElementById(id);
+
+  // ---- Untrusted input boundary -------------------------------------------
+  // node_id, geohash, sensor names, fw_version and pass_nft_id are all
+  // SELF-REPORTED BY DEVICES. This page is served from the theorchard.network
+  // zone (shared session cookie) and loads the wallet widget, so anything
+  // injected here would run beside it. Nothing from the API reaches HTML
+  // without going through esc(); identifiers are shape-checked before use.
+  const ESC={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+  const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>ESC[c]);
+  const isGeohash=(g)=>typeof g==="string" && g.length>0 && g.length<=12 && [...g.toLowerCase()].every(c=>GH.includes(c));
+  // Chia NFT id: bech32m "nft1" + payload over the bech32 charset.
+  const isNftId=(v)=>typeof v==="string" && /^nft1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{50,110}$/.test(v);
   let world=null;      // the ONE Globe instance — built once, then only fed new data
   let loading=false;   // guards against overlapping refreshes on a slow network
 
@@ -237,13 +249,14 @@
 
     const pts=[];
     for(const n of nodes){
-      const loc = (n.geohash && ghCenter(n.geohash)) || LOCATIONS[n.node_id] || null;
+      const gh = isGeohash(n.geohash) ? n.geohash.toLowerCase() : null;
+      const loc = (gh && ghCenter(gh)) || LOCATIONS[n.node_id] || null;
       const fruits = fruitsFor(n.sensors);
       const state = stateFrom(n);
       const placed = !!loc;
       const node = { id:n.node_id, short:(n.node_id||"").slice(0,8),
         lat: loc?loc.lat:null, lng: loc?loc.lng:null,
-        region: n.geohash ? ("cell "+n.geohash) : REGION,
+        region: gh ? ("cell "+gh) : REGION,
         fruits, state, fw:n.fw_version, pass:n.pass_nft_id, last:n.last_reading_at,
         sensors:(n.sensors||[]).filter(s=>s!=="gps"),
         color: fruits[0] ? fruits[0].color : STATE_COLOR[state] };
@@ -263,7 +276,7 @@
   function renderFallback(pts){
     $("globe").style.display="none"; document.querySelector(".overlay").style.display="none";
     $("fallback").style.display="flex";
-    $("fb-list").innerHTML = pts.map(p=>`<li><b>${p.short}…</b> — ${p.region} · ${p.state} · ${p.fruits.map(f=>f.emoji+f.type).join(", ")||"online"}</li>`).join("");
+    $("fb-list").innerHTML = pts.map(p=>`<li><b>${esc(p.short)}…</b> — ${esc(p.region)} · ${esc(p.state)} · ${esc(p.fruits.map(f=>f.emoji+f.type).join(", "))||"online"}</li>`).join("");
   }
 
   // Refresh path: feed new data into the EXISTING globe. Never re-create it —
@@ -282,7 +295,7 @@
       .showAtmosphere(true).atmosphereColor("#2bd4d4").atmosphereAltitude(0.2)
       .pointsData(pts).pointLat("lat").pointLng("lng").pointColor("color")
       .pointAltitude(0.012).pointRadius(0.5).pointResolution(18)
-      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${p.short}…</b><br><span style="color:#a3bcb0">${p.region}</span><br>${p.fruits.map(f=>f.emoji+" "+f.type).join(" · ")||"online · no sensors yet"}</div>`)
+      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"online · no sensors yet"}</div>`)
       .onPointClick(showPanel);
     if(!reduce){ world.ringsData(pts).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
     const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
@@ -296,13 +309,16 @@
     $("p-title").textContent = "Tree";
     $("p-reg").textContent = "📍 " + p.region;
     const sc = STATE_COLOR[p.state]||"#76907f";
-    $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${p.state}`;
+    $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${esc(p.state)}`;
     $("p-fw").textContent = p.fw || "—";
     $("p-last").textContent = ago(p.last);
     $("p-fruits").innerHTML = p.fruits.length
-      ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${f.color}"></i>${f.emoji} ${f.type}</span>`).join("")
+      ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${esc(f.color)}"></i>${esc(f.emoji)} ${esc(f.type)}</span>`).join("")
       : `<span class="fruit">🌱 online · no sensors reporting yet</span>`;
-    const passLink = p.pass ? `<a href="https://mintgarden.io/nfts/${p.pass}" target="_blank" rel="noopener">${p.pass.slice(0,14)}… ↗</a>` : "—";
+    // Only a well-formed Chia NFT id becomes a link; anything else is inert text.
+    const passLink = isNftId(p.pass)
+      ? `<a href="https://mintgarden.io/nfts/${encodeURIComponent(p.pass)}" target="_blank" rel="noopener">${esc(p.pass.slice(0,14))}… ↗</a>`
+      : (p.pass ? `<span title="unrecognised Pass id">${esc(String(p.pass).slice(0,24))}</span>` : "—");
     $("p-proof").innerHTML = `🔒 Coarse region only — never precise GPS.<br><span class="verify">✓ Orchard Pass</span> ${passLink}<br>Readings signed at the source; verifiable on Chia.`;
     $("panel").classList.add("show");
   }
