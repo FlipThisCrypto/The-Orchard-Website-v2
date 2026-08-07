@@ -3,13 +3,13 @@
 > Auto-generated from `tasks/tasks.json` by `scripts/generate.mjs`. **Do not edit by hand** —
 > edit the JSON and regenerate. Live view: `dashboard/index.html`.
 
-**32/32 authored tasks done** (100% of the work planned so far) · 1 later phase not yet planned · task data updated 2026-08-06
+**39/39 authored tasks done** (100% of the work planned so far) · 1 later phase not yet planned · task data updated 2026-08-07
 
 ## By advisor
 
 | Seat | Owner | Done | Total | % |
 |---|---|---|---|---|
-| Lead Dev & Integrator | Claude Code | 20 | 20 | 100% |
+| Lead Dev & Integrator | Claude Code | 27 | 27 | 100% |
 | Product & UX Strategy | ChatGPT | 5 | 5 | 100% |
 | Research & Modeling | Gemini | 4 | 4 | 100% |
 | Growth & Markets | Grok | 3 | 3 | 100% |
@@ -73,6 +73,13 @@ Astro shell + globe island + Atlas API on Cloudflare.
 | ORCH-056 | Mission Control: truthful, resilient, accessible | Claude Code | ✅ done | P1 | `dashboard/` |
 | ORCH-057 | Share metadata and favicon across the published pages | Claude Code | ✅ done | P2 | `favicon.svg` |
 | ORCH-058 | Fruit legend: one source of truth for classes and colours | Claude Code | ✅ done | P1 | `docs/product/fruit-data-legend.md` |
+| ORCH-059 | Ship worldview to production, with drift detection | Claude Code | ✅ done | P0 | `scripts/check-deployed.mjs` |
+| ORCH-060 | Failure honesty: boot boundaries, empty states, isolated globe failures | Claude Code | ✅ done | P0 | `worldview/app.js` |
+| ORCH-061 | Honest time: oracle clock, heartbeat states, UTC parsing | Claude Code | ✅ done | P0 | `worldview/orchard-data.js` |
+| ORCH-062 | Show the network as it is: activity-first stats, composition, Explorer evidence | Claude Code | ✅ done | P1 | `worldview/app.js` |
+| ORCH-063 | Structural accessibility as a contract across every page | Claude Code | ✅ done | P1 | `tests/page-structure.test.mjs` |
+| ORCH-064 | Guard the gates: pre-commit hook, extracted scripts, contract checks | Claude Code | ✅ done | P0 | `scripts/hooks/pre-commit` |
+| ORCH-065 | Documentation that cannot silently rot | Claude Code | ✅ done | P2 | `docs/HOW-WE-BUILT-THIS.md` |
 
 ## Phase 4 — Migrate — not started
 

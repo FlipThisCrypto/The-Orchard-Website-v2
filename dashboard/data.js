@@ -2,7 +2,7 @@
 window.TASKS = {
   "project": "The Orchard v2 — Website",
   "repo": "FlipThisCrypto/The-Orchard-Website-v2",
-  "updated": "2026-08-06",
+  "updated": "2026-08-07",
   "note": "Canonical source of truth for all tasks. TASKS.md and dashboard/data.js are generated from this file. Only the Lead edits it.",
   "phases": [
     {
@@ -858,7 +858,179 @@ window.TASKS = {
       "deliverable_path": "docs/product/fruit-data-legend.md",
       "created": "2026-08-06",
       "updated": "2026-08-06"
+    },
+    {
+      "id": "ORCH-059",
+      "title": "Ship worldview to production, with drift detection",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-050"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Deploy the built page to worldview.theorchard.network (direct-upload Pages), correct the deploy docs that implied git-connected builds, and add scripts/check-deployed.mjs so \"is production running this repo?\" is answerable by hash.",
+      "scope_out": "Changing the Pages project type; the other Orchard properties.",
+      "definition_of_done": [
+        "Production byte-identical to the repo on every deployable file",
+        "_headers observably applied",
+        "Docs lead with the direct-upload warning",
+        "Induced drift detected with both hashes shown"
+      ],
+      "deliverable_path": "scripts/check-deployed.mjs",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-060",
+      "title": "Failure honesty: boot boundaries, empty states, isolated globe failures",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-051"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Catch the failures the pages could not report: a script that never starts shows a banner instead of \"connecting…\" forever; a board with no data says so instead of \"0%\"; a globe that cannot build reports as a globe problem, not a data problem, and stops retrying blindly.",
+      "scope_out": "Server-side monitoring.",
+      "definition_of_done": [
+        "Boot failure visible on both pages with a reload path",
+        "\"No data\" never renders as a measured zero",
+        "Globe construction failure isolated from the data path with a single retry offer"
+      ],
+      "deliverable_path": "worldview/app.js",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-061",
+      "title": "Honest time: oracle clock, heartbeat states, UTC parsing",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-051"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Judge freshness against the oracle's as_of_utc rather than the visitor's clock; parse its offset-less timestamps as UTC (they were being read in local time, making node state a function of geography); use last_seen_at to implement the canonical Stale-data vs Offline precedence; never call a never-reported Tree healthy or \"recent\".",
+      "scope_out": "Oracle-side changes.",
+      "definition_of_done": [
+        "Same payload yields the same state in every timezone",
+        "States match the oracle's own trees_active_24h",
+        "never-reported renders as new growth with \"never\"",
+        "Corrections to earlier wrong claims logged in the canonical doc"
+      ],
+      "deliverable_path": "worldview/orchard-data.js",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-062",
+      "title": "Show the network as it is: activity-first stats, composition, Explorer evidence",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-061"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Headline trees_active_24h and readings_last_24h over lifetime totals; show health and data composition unblended per the node-state model; complete the Tree Explorer with the sensor list, planted date, Pass verification evidence, and a named list of what the oracle does not publish.",
+      "scope_out": "New oracle endpoints.",
+      "definition_of_done": [
+        "Activity figures lead the stat tiles",
+        "Composition shown as two separate lines, never a blended score",
+        "Pass tick only with on-chain evidence",
+        "Unpublished fields named, not omitted"
+      ],
+      "deliverable_path": "worldview/app.js",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-063",
+      "title": "Structural accessibility as a contract across every page",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P1",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-053"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Landmarks, single-h1 outlines, skip links, decorative canvas markers and reduced-motion state shapes — then encode the whole set as tests over every published page so the next page cannot ship without them.",
+      "scope_out": "A formal WCAG audit.",
+      "definition_of_done": [
+        "Contract enforced by tests that failed red on the drifted page first",
+        "State distinguishable by shape and label with zero animation",
+        "Every page routes visibly to the live network"
+      ],
+      "deliverable_path": "tests/page-structure.test.mjs",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-064",
+      "title": "Guard the gates: pre-commit hook, extracted scripts, contract checks",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P0",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-055"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Make the CI gate run before a commit can exist; extract both pages' inline scripts so node --check covers them (and a strict script-src becomes possible — shipped report-only pending a real wallet test); add scripts/check-oracle.mjs for API drift and scripts/scan-secrets.mjs re-verifying the no-secrets guarantee over the tree and full history.",
+      "scope_out": "Enforcing the script CSP before the wallet flow is exercised.",
+      "definition_of_done": [
+        "A red tree cannot be committed by accident",
+        "Every shipped script parse-checked",
+        "API contract verified against the live oracle",
+        "History-wide secrets scan clean and repeatable"
+      ],
+      "deliverable_path": "scripts/hooks/pre-commit",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
+    },
+    {
+      "id": "ORCH-065",
+      "title": "Documentation that cannot silently rot",
+      "owner": "lead",
+      "status": "done",
+      "priority": "P2",
+      "phase": "3-build",
+      "depends_on": [
+        "ORCH-058"
+      ],
+      "inputs": [
+        "https://github.com/FlipThisCrypto/The-Orchard-Website-v2/blob/main/docs/HOW-WE-BUILT-THIS.md"
+      ],
+      "scope_in": "Update the collaboration tutorial with the build phase and its failures; date and source MISSION.md's network figures with drift detection against the live oracle; log corrections where earlier claims were wrong rather than editing them away.",
+      "scope_out": "Rewriting history or advisor deliverables.",
+      "definition_of_done": [
+        "Tutorial covers what an AI Lead gets wrong unsupervised",
+        "Network figures carry an as-of date and a live source",
+        "check-oracle reports documented-vs-actual drift"
+      ],
+      "deliverable_path": "docs/HOW-WE-BUILT-THIS.md",
+      "created": "2026-08-07",
+      "updated": "2026-08-07"
     }
   ]
 };
-window.TASKS_UPDATED = "2026-08-06";
+window.TASKS_UPDATED = "2026-08-07";
