@@ -57,6 +57,7 @@ docs/       product (ChatGPT) · research (Gemini) · growth (Grok) · architect
 prototypes/ globe-poc — the living-globe proof-of-concept
 design/ app/   design assets · the Astro site (later phases)
 scripts/    generate.mjs — rebuilds TASKS.md + data.js from tasks.json
+tests/      node --test suite (worldview data logic + security controls)
 ```
 
 ## Regenerating the board
@@ -66,6 +67,19 @@ scripts/    generate.mjs — rebuilds TASKS.md + data.js from tasks.json
 ```bash
 node scripts/generate.mjs   # rebuilds tasks/TASKS.md and dashboard/data.js
 ```
+
+## Tests
+
+Zero dependencies — Node's built-in runner, no install step:
+
+```bash
+node --test
+```
+
+Covers the worldview data logic in [`worldview/orchard-data.js`](worldview/orchard-data.js) (fruit
+classification, node-state thresholds, geohash decoding) and the untrusted-input controls that
+`SECURITY.md` promises — escaping and Pass/geohash validation. CI runs the same command on every
+push and pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Security
 

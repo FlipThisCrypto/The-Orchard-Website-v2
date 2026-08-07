@@ -43,5 +43,8 @@ Add an owner-set coarse location to the oracle (a `geohash` the operator sets pe
 only the ~5 km cell). Then this page reads location from the API like everything else and the
 `LOCATIONS` map can be retired. Live GPS already auto-fills `geohash` if a Tree ever gets a fix.
 
-## Vendored (`vendor/`)
-`globe.gl.min.js` (includes three.js) + `earth-night.jpg` — self-contained, no CDN.
+## Files
+- `index.html` — the page: layout, globe rendering, panels, the refresh loop.
+- `orchard-data.js` — the pure data logic (fruit classification, node state, geohash decoding,
+  escaping and id validation). No DOM, so it's unit-tested in `tests/` — run `node --test`.
+- `vendor/` — `globe.gl.min.js` (includes three.js) + `earth-night.jpg`. Self-contained, no CDN.

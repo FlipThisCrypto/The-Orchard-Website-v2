@@ -19,6 +19,9 @@ Work only from a **Task Brief** ([template](governance/templates/task-brief.md))
 
 ## If you're a human contributor / forker
 - Propose changes via a pull request; the Lead reviews and merges. Keep PRs focused.
+- **Run `node --test` before you push.** No install step — it uses Node's built-in runner, and CI
+  runs the same command. If you touch `worldview/orchard-data.js`, add tests for what you changed;
+  the escaping and id-validation tests are security controls, not decoration.
 - Don't hand-edit generated files (`tasks/TASKS.md`, `dashboard/data.js`) — edit `tasks/tasks.json`
   and run `node scripts/generate.mjs`.
 - **Never commit secrets** (keys, mnemonics, wallet files, tokens). See [`SECURITY.md`](SECURITY.md).

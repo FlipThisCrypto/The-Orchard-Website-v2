@@ -162,6 +162,7 @@
   </div></div>
 
 <script src="vendor/globe.gl.min.js"></script>
+<script src="orchard-data.js"></script>
 <script>
   const ORACLE = "https://oracle.theorchard.network";
   const REGION = "Shepherdsville, KY (approx.)";
@@ -183,54 +184,14 @@
     { node_id:"F04EC2E3B76077374BE9142CF91D2CE9", sensors:[], fw_version:"0.5.1", pass_nft_id:"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y", last_reading_at:null }
   ];
   const SNAPSHOT_STATS = { trees_registered:4, readings_total:11605 };
-  const STATE_COLOR = { healthy:"#4ade80", idle:"#2bd4d4", offline:"#76907f" };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // sensor key -> data-class fruit (gps is location metadata, not a fruit)
-  function classify(key){
-    const k = (key||"").toLowerCase();
-    if (k==="gps") return null;
-    if (/ds18|temp/.test(k)) return {type:"Temperature", emoji:"🍊", color:"#ff9f2e"};
-    if (/hum|dht|sht/.test(k)) return {type:"Humidity", emoji:"🫐", color:"#4f7bff"};
-    if (/mq13|voc|co2|aqi|air/.test(k)) return {type:"Air quality", emoji:"🍋", color:"#f4d23c"};
-    if (/pms|pm25|pm10|particul/.test(k)) return {type:"Particulates", emoji:"🍇", color:"#b14aef"};
-    if (/bmp|bme|press|baro/.test(k)) return {type:"Pressure", emoji:"🍐", color:"#a3e635"};
-    if (/soil/.test(k)) return {type:"Soil", emoji:"🍎", color:"#4ade80"};
-    return {type:key, emoji:"🌿", color:"#2bd4d4"};
-  }
-  function fruitsFor(sensors){
-    const out=[], seen=new Set();
-    for(const s of (sensors||[])){ const f=classify(s); if(f && !seen.has(f.type)){ seen.add(f.type); out.push(f); } }
-    return out;
-  }
-  function stateFrom(n){
-    if(!n.last_reading_at) return "healthy"; // snapshot / listed = treat as online
-    const age=(Date.now()-new Date(n.last_reading_at))/3600000;
-    if(age<2) return "healthy"; if(age<26) return "idle"; return "offline";
-  }
-  function ago(d){ if(!d) return "recently"; const s=(Date.now()-new Date(d))/1000; const u=[[86400,"d"],[3600,"h"],[60,"m"]]; for(const[n,l]of u){if(s>=n)return Math.floor(s/n)+l+" ago";} return "just now"; }
-  // geohash -> cell-center {lat,lng} (used if/when the oracle returns one)
-  const GH="0123456789bcdefghjkmnpqrstuvwxyz";
-  function ghCenter(gh){ if(!gh) return null; let even=true,latlo=-90,lathi=90,lonlo=-180,lonhi=180;
-    for(const c of gh){ const cd=GH.indexOf(c); if(cd<0) return null;
-      for(let b=4;b>=0;b--){ const bit=(cd>>b)&1;
-        if(even){ const m=(lonlo+lonhi)/2; if(bit)lonlo=m; else lonhi=m; } else { const m=(latlo+lathi)/2; if(bit)latlo=m; else lathi=m; } even=!even; } }
-    return { lat:(latlo+lathi)/2, lng:(lonlo+lonhi)/2 }; }
+  // Pure data logic (classification, node state, geohash, escaping, id checks)
+  // lives in orchard-data.js so it can be unit-tested — see tests/.
+  const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR } = window.OrchardData;
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
   const $=(id)=>document.getElementById(id);
-
-  // ---- Untrusted input boundary -------------------------------------------
-  // node_id, geohash, sensor names, fw_version and pass_nft_id are all
-  // SELF-REPORTED BY DEVICES. This page is served from the theorchard.network
-  // zone (shared session cookie) and loads the wallet widget, so anything
-  // injected here would run beside it. Nothing from the API reaches HTML
-  // without going through esc(); identifiers are shape-checked before use.
-  const ESC={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
-  const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>ESC[c]);
-  const isGeohash=(g)=>typeof g==="string" && g.length>0 && g.length<=12 && [...g.toLowerCase()].every(c=>GH.includes(c));
-  // Chia NFT id: bech32m "nft1" + payload over the bech32 charset.
-  const isNftId=(v)=>typeof v==="string" && /^nft1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{50,110}$/.test(v);
   let world=null;      // the ONE Globe instance — built once, then only fed new data
   let loading=false;   // guards against overlapping refreshes on a slow network
 
