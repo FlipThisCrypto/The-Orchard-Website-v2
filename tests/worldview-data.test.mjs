@@ -272,6 +272,7 @@ test('normalizeNodes keeps well-formed nodes and drops junk entries', () => {
   assert.deepEqual(out[1], {
     node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null,
     last_reading_at: null, last_seen_at: null, pass_verified_at: null, registered_at: null,
+    label: null,
   });
 });
 
@@ -969,4 +970,39 @@ test('normalizeNodes carries the trust and lifecycle fields', () => {
   }]);
   assert.equal(n.pass_verified_at, '2026-06-16T09:11:06.411151');
   assert.equal(n.registered_at, '2026-06-16T09:11:04.370897');
+});
+
+// ---------------------------------------------------------------------------
+// Operator labels — the most human-controlled input the oracle relays. All
+// null on the live network today; wired now so names Just Work the day the
+// first operator sets one.
+// ---------------------------------------------------------------------------
+test('a label is carried, trimmed and length-bounded', () => {
+  const [a] = normalizeNodes([{ node_id: 'A', label: '  Backyard Sentinel  ' }]);
+  assert.equal(a.label, 'Backyard Sentinel');
+  const [b] = normalizeNodes([{ node_id: 'B', label: 'x'.repeat(500) }]);
+  assert.equal(b.label.length, 60, 'labels are bounded so one operator cannot deform every layout');
+});
+
+test('a missing, empty or non-string label is null, never rendered garbage', () => {
+  for (const v of [undefined, null, '', '   ', 42, {}, []]) {
+    const [n] = normalizeNodes([{ node_id: 'A', label: v }]);
+    assert.equal(n.label, null, `label ${JSON.stringify(v)} should normalise to null`);
+  }
+});
+
+test('a labelled Tree leads with its name; an unlabelled one is unchanged', () => {
+  const named = treeSummary({ ...TREE, label: 'Backyard Sentinel' });
+  assert.match(named, /^Backyard Sentinel \(0C59BF4E…\)/);
+  assert.equal(
+    treeSummary(TREE),
+    '0C59BF4E… · Shepherdsville, KY (approx.) · reporting · 🍊 Temperature · 🍐 Pressure',
+    'no label must mean exactly the old rendering'
+  );
+});
+
+test('a hostile label survives normalisation only as inert text material', () => {
+  const [n] = normalizeNodes([{ node_id: 'A', label: '<img src=x onerror=alert(1)>' }]);
+  assert.equal(n.label, '<img src=x onerror=alert(1)>');   // carried raw…
+  assert.equal(esc(n.label).includes('<'), false);          // …because esc() at render is the boundary
 });

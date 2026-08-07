@@ -124,7 +124,8 @@ test('every script the page loads from itself has a cache rule', () => {
   // A same-origin script with no rule inherits the default and can be served
   // stale after a deploy — the failure that made the page look broken once.
   const page = readFileSync(join(root, 'worldview/index.html'), 'utf8');
-  const ownScripts = [...page.matchAll(/<script src="(?!https?:)([^"]+)"/g)].map((m) => '/' + m[1]);
+  // Strip any cache-busting query: _headers rules match the path alone.
+  const ownScripts = [...page.matchAll(/<script src="(?!https?:)([^"]+)"/g)].map((m) => '/' + m[1].split('?')[0]);
   assert.ok(ownScripts.length >= 2, `expected the page to load its own scripts, found ${ownScripts.length}`);
   for (const s of ownScripts) {
     assert.match(rules[s]?.['Cache-Control'] || '', /max-age=0/, `${s} has no no-stale cache rule in _headers`);

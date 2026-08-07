@@ -37,6 +37,7 @@ export const CONTRACT = {
       geohash: { type: 'string|null', required: false },
       pass_verified_at: { type: 'string|null', required: false },  // evidence for the Pass tick
       registered_at: { type: 'string|null', required: false },     // the planted date
+      label: { type: 'string|null', required: false },             // operator's name for the Tree
     },
     // Present in the response and deliberately NOT read: publishing an
     // operator's wallet beside a Tree is exactly what SECURITY.md forbids.

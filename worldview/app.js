@@ -105,7 +105,7 @@ const ORACLE = "https://oracle.theorchard.network";
         lat: loc?loc.lat:null, lng: loc?loc.lng:null,
         region: gh ? ("cell "+gh) : REGION,
         fruits, state, fw:n.fw_version, pass:n.pass_nft_id, last:n.last_reading_at,
-        passVerifiedAt:n.pass_verified_at, registeredAt:n.registered_at,
+        passVerifiedAt:n.pass_verified_at, registeredAt:n.registered_at, label:n.label,
         sensors:(n.sensors||[]).filter(s=>s!=="gps"),
         color: fruits[0] ? fruits[0].color : STATE_COLOR[state] };
       if(placed) pts.push(node);
@@ -175,7 +175,8 @@ const ORACLE = "https://oracle.theorchard.network";
       ? `<li class="tl-empty">${esc(view.note)}</li>`
       : items.map((p,i)=>{
           const dot = `<i class="tl-dot" style="background:${esc(STATE_COLOR[p.state]||"#76907f")}"></i>`;
-          const body = `<span class="tl-txt"><span class="tl-id">${esc(p.short)}…</span>
+          const name = p.label ? `<span class="tl-name">${esc(p.label)}</span> ` : "";
+          const body = `<span class="tl-txt">${name}<span class="tl-id">${esc(p.short)}…</span>
             <span class="tl-meta">${esc(p.region)} · ${esc(shapeFor(p.state).label)} · ${esc((p.fruits||[]).map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</span></span>`;
           return `<li><button type="button" data-i="${i}" aria-label="${esc(treeSummary(p))}">${dot}${body}</button></li>`;
         }).join("");
@@ -228,7 +229,7 @@ const ORACLE = "https://oracle.theorchard.network";
       // quiet Tree is distinguishable with no animation at all.
       .pointsData(pts).pointLat("lat").pointLng("lng").pointColor("color")
       .pointAltitude(p=>shapeFor(p.state).altitude).pointRadius(p=>shapeFor(p.state).radius).pointResolution(18)
-      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)} · ${esc(shapeFor(p.state).label)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</div>`)
+      .pointLabel(p=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.93);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3"><b>${p.label?esc(p.label)+" · ":""}${esc(p.short)}…</b><br><span style="color:#a3bcb0">${esc(p.region)} · ${esc(shapeFor(p.state).label)}</span><br>${esc(p.fruits.map(f=>f.emoji+" "+f.type).join(" · "))||"no sensors reporting"}</div>`)
       .onPointClick(p=>showPanel(p));   // globe.gl passes (point, event) — don't leak the event in as an opener
     if(!reduce){ world.ringsData(applyRingCap(pts)).ringLat("lat").ringLng("lng").ringColor(p=>p.color).ringMaxRadius(4).ringPropagationSpeed(1.7).ringRepeatPeriod(1600); }
     const c=world.controls(); c.autoRotate=false; c.enableDamping=true; c.enableZoom=true;
@@ -289,7 +290,7 @@ const ORACLE = "https://oracle.theorchard.network";
 
   function showPanel(p, opener){
     $("p-id").textContent = p.id;
-    $("p-title").textContent = "Tree";
+    $("p-title").textContent = p.label || "Tree";
     $("p-reg").textContent = "📍 " + p.region;
     const sc = STATE_COLOR[p.state]||"#76907f";
     $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${esc(shapeFor(p.state).label)}`;

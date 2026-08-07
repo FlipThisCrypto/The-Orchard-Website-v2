@@ -138,6 +138,7 @@
   .tl-items button:hover{background:rgba(120,230,200,.1);border-color:rgba(120,230,200,.42)}
   .tl-items .tl-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tl-items .tl-txt{min-width:0}
+  .tl-items .tl-name{font-weight:700;font-size:12.5px}
   .tl-items .tl-id{font-family:var(--mono);font-size:11.5px;color:var(--cyan)}
   .tl-items .tl-meta{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .tl-empty{color:var(--muted2);font-size:12.5px;padding:6px 2px}
@@ -348,8 +349,8 @@
 
 <!-- orchard-data.js is 2 KB and everything needs it; the 3D engine (490 KB gzip)
      is loaded on demand below so it can never block first paint. -->
-<script src="orchard-data.js"></script>
-<script src="app.js"></script>
+<script src="orchard-data.js?v=46"></script>
+<script src="app.js?v=46"></script>
 <!-- Shared wallet widget — fills [data-orchard-connect] in the top nav -->
 <script src="https://oracle.theorchard.network/connect.js"></script>
 </body>

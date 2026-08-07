@@ -294,6 +294,10 @@
         // checked on chain, and when the Tree was planted.
         pass_verified_at: typeof n.pass_verified_at === 'string' ? n.pass_verified_at : null,
         registered_at: typeof n.registered_at === 'string' ? n.registered_at : null,
+        // Operator-authored free text — the most human-controlled input the
+        // oracle relays. Length-bounded here; escaped at every render site
+        // like everything else.
+        label: typeof n.label === 'string' && n.label.trim() ? n.label.trim().slice(0, 60) : null,
       });
     }
     return out;
@@ -409,7 +413,9 @@
   function treeSummary(p) {
     const fruits = (p.fruits || []).map((f) => f.emoji + ' ' + f.type).join(' · ');
     return [
-      (p.short || '') + '…',
+      // An operator's name for the Tree leads; the hex id stays as the
+      // fallback identity, not the headline.
+      p.label ? p.label + ' (' + (p.short || '') + '…)' : (p.short || '') + '…',
       p.region,
       // The plain-language label, not the internal key: "planted, no Harvest
       // yet" tells a listener something; "new" does not.

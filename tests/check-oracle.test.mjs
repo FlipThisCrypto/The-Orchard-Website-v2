@@ -19,7 +19,7 @@ const STATS = CONTRACT['/network/stats'];
 const node = (over = {}) => ({
   node_id: 'A', sensors: [], last_seen_at: null, last_reading_at: null,
   fw_version: '0.5.1', pass_nft_id: null, geohash: null,
-  pass_verified_at: null, registered_at: null, ...over,
+  pass_verified_at: null, registered_at: null, label: null, ...over,
 });
 const stats = (over = {}) => ({
   trees_registered: 4, trees_active_24h: 2, readings_total: 10, readings_last_24h: 1,
