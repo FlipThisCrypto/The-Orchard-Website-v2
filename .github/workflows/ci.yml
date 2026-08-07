@@ -37,7 +37,7 @@ jobs:
           # direct-upload, so production legitimately lags the repo between
           # deploys — failing PRs for that would be noise. Run
           # `node scripts/check-deployed.mjs` when you want that answer.
-          for f in scripts/*.mjs worldview/*.js dashboard/board-data.js; do
+          for f in scripts/*.mjs worldview/*.js dashboard/*.js; do
             case "$f" in */vendor/*) continue;; esac
             echo "checking $f"
             node --check "$f"

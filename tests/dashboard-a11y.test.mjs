@@ -9,11 +9,24 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const src = readFileSync(join(root, 'dashboard/index.html'), 'utf8');
+// The page's markup and its script now live in separate files; these locks
+// are about the contract between them, so read both.
+const html = readFileSync(join(root, 'dashboard/index.html'), 'utf8');
+const app = readFileSync(join(root, 'dashboard/app.js'), 'utf8');
+const src = html + app;
 
 test('the page has a main landmark', () => {
-  assert.match(src, /<main>/);
-  assert.match(src, /<\/main>/);
+  assert.match(html, /<main>/);
+  assert.match(html, /<\/main>/);
+});
+
+test('the page script is external so the syntax check can see it', () => {
+  // While it was inline it was the largest shipped file neither CI nor the
+  // pre-commit hook could check.
+  assert.match(html, /<script src="app\.js"><\/script>/);
+  assert.ok(app.length > 5000, 'dashboard/app.js should hold the page script');
+  // The boot boundary must stay inline: it guards the scripts that follow it.
+  assert.match(html, /__boardBootFailed/);
 });
 
 test('there is a polite live region for async updates', () => {

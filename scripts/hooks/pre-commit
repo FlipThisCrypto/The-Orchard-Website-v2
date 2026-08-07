@@ -32,7 +32,7 @@ node scripts/generate.mjs --check || {
 }
 
 # 3. Standalone scripts must parse.
-for f in scripts/*.mjs worldview/*.js dashboard/board-data.js; do
+for f in scripts/*.mjs worldview/*.js dashboard/*.js; do
   case "$f" in */vendor/*) continue;; esac
   [ -f "$f" ] || continue
   node --check "$f" || {
