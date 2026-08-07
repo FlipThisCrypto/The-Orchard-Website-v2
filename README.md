@@ -100,6 +100,13 @@ To check whether production is actually running this repo (byte-exact, plus the 
 node scripts/check-deployed.mjs
 ```
 
+And to check the live oracle still publishes what the page reads — field presence and type, plus
+anything newly published that the page could be using:
+
+```bash
+node scripts/check-oracle.mjs
+```
+
 Covers the worldview data logic in [`worldview/orchard-data.js`](worldview/orchard-data.js) (fruit
 classification, node-state thresholds, geohash decoding) and the untrusted-input controls that
 `SECURITY.md` promises — escaping and Pass/geohash validation. CI runs the same command on every
