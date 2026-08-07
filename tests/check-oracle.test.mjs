@@ -117,3 +117,57 @@ test('every field the contract requires is one the page actually reads', () => {
     }
   }
 });
+
+// ---------------------------------------------------------------------------
+// Documented claims. MISSION.md is read by every advisor before every task and
+// stated the network size as a bare fact with no date and no source; it was
+// already wrong by the time anyone noticed.
+// ---------------------------------------------------------------------------
+import { checkClaims, DOCUMENTED_CLAIMS } from '../scripts/check-oracle.mjs';
+
+const mission = readFileSync(join(root, 'MISSION.md'), 'utf8');
+
+test('the documented claims still exist in the file they point at', () => {
+  // A pattern that stops matching is itself drift — the paragraph was edited.
+  for (const c of DOCUMENTED_CLAIMS) {
+    assert.match(mission, c.pattern, `${c.file} no longer states ${c.field} in the expected form`);
+  }
+});
+
+test('matching numbers report no drift', () => {
+  const stats = { trees_registered: 4, trees_active_24h: 2, current_season: 73 };
+  assert.deepEqual(checkClaims({ 'MISSION.md': mission }, stats), []);
+});
+
+test('a number that has moved is reported with both values', () => {
+  const drift = checkClaims({ 'MISSION.md': mission }, { trees_registered: 12, trees_active_24h: 2, current_season: 73 });
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0].field, 'trees_registered');
+  assert.match(drift[0].issue, /documents 4, oracle says 12/);
+});
+
+test('a claim edited out of the document is reported, not silently passed', () => {
+  const without = mission.replace(/\(Season \d+\)/, '(season withheld)');
+  const drift = checkClaims({ 'MISSION.md': without }, { trees_registered: 4, trees_active_24h: 2, current_season: 73 });
+  assert.equal(drift.length, 1);
+  assert.match(drift[0].issue, /no longer present/);
+});
+
+test('nothing is claimed when the oracle did not say', () => {
+  // A missing live value must not be read as disagreement.
+  assert.deepEqual(checkClaims({ 'MISSION.md': mission }, {}), []);
+  assert.deepEqual(checkClaims({ 'MISSION.md': mission }, null), []);
+});
+
+test('a missing file is reported rather than skipped', () => {
+  const drift = checkClaims({ 'MISSION.md': null }, { trees_registered: 4 });
+  assert.ok(drift.length >= 1);
+  assert.match(drift[0].issue, /file not found/);
+});
+
+test('MISSION.md dates its network figures and cites where the live ones are', () => {
+  // The failure this fixes: a bare number with no date and no source.
+  assert.match(mission, /As of\s+\*\*\d{4}-\d{2}-\d{2}\*\*/, 'the cold-start figures need an as-of date');
+  assert.match(mission, /oracle\.theorchard\.network\/network\/stats/, 'they should cite the live source');
+  assert.match(mission, /check-oracle\.mjs/, 'and say how to detect drift');
+});

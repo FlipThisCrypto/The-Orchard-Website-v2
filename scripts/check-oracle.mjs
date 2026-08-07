@@ -16,6 +16,8 @@
 //
 // It reads only public endpoints and never prints wallet_address or any other
 // operator-identifying field.
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ORACLE = 'https://oracle.theorchard.network';
@@ -95,6 +97,34 @@ export function checkEndpoint(sample, contract) {
   return { problems, extras };
 }
 
+// Prose goes stale silently. MISSION.md is read by every advisor before every
+// task and states the network size as a bare fact; it was already wrong by the
+// time anyone noticed. These are the documented claims worth checking against
+// what the oracle actually says.
+export const DOCUMENTED_CLAIMS = [
+  { file: 'MISSION.md', field: 'trees_registered', pattern: /\*\*(\d+) Trees registered/ },
+  { file: 'MISSION.md', field: 'trees_active_24h', pattern: /(\d+) reporting in the last 24 ?h|(\d+) reporting in the last 24 h/ },
+  { file: 'MISSION.md', field: 'current_season', pattern: /\(Season (\d+)\)/ },
+];
+
+/** Which documented numbers no longer match the live ones. Pure. */
+export function checkClaims(docs, stats) {
+  const drift = [];
+  for (const claim of DOCUMENTED_CLAIMS) {
+    const text = docs[claim.file];
+    if (text == null) { drift.push({ ...claim, issue: 'file not found' }); continue; }
+    const m = text.match(claim.pattern);
+    if (!m) { drift.push({ ...claim, issue: 'claim no longer present — pattern did not match' }); continue; }
+    const documented = Number(m.slice(1).find((x) => x != null));
+    const actual = stats ? stats[claim.field] : null;
+    if (actual == null) continue;                       // the oracle didn't say; nothing to compare
+    if (documented !== actual) {
+      drift.push({ ...claim, issue: `documents ${documented}, oracle says ${actual}`, documented, actual });
+    }
+  }
+  return drift;
+}
+
 export function summarise(results) {
   const breaking = results.flatMap((r) => r.problems.filter((p) => p.required).map((p) => ({ endpoint: r.endpoint, ...p })));
   const soft = results.flatMap((r) => r.problems.filter((p) => !p.required).map((p) => ({ endpoint: r.endpoint, ...p })));
@@ -119,6 +149,23 @@ async function main(argv) {
   }
   const result = summarise(results);
 
+  // Documented-vs-actual. Not fatal: prose drifting is worth knowing about,
+  // not worth failing a check that also guards the API contract.
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const docs = {};
+  for (const c of DOCUMENTED_CLAIMS) {
+    if (c.file in docs) continue;
+    try { docs[c.file] = readFileSync(join(root, c.file), 'utf8'); } catch { docs[c.file] = null; }
+  }
+  const statsSample = results.find((r) => r.endpoint === '/network/stats');
+  let liveStats = null;
+  try {
+    const res = await fetch(ORACLE + '/network/stats', { signal: AbortSignal.timeout(15000) });
+    if (res.ok) liveStats = await res.json();
+  } catch { /* the endpoint check above already reported this */ }
+  const drift = checkClaims(docs, liveStats);
+  result.documentedDrift = drift;
+
   if (asJson) { console.log(JSON.stringify(result, null, 2)); }
   else {
     console.log(`\n  ${ORACLE}\n`);
@@ -127,6 +174,10 @@ async function main(argv) {
       console.log(`  ${mark} ${r.endpoint}`);
       for (const p of r.problems) console.log(`      ${p.required ? '✗' : '·'} ${p.field}: ${p.issue}`);
       if (r.extras.length) console.log(`      + publishes, unused by the page: ${r.extras.join(', ')}`);
+    }
+    if (drift.length) {
+      console.log('\n  Documented numbers that have drifted:');
+      for (const d of drift) console.log(`      · ${d.file} ${d.field}: ${d.issue}`);
     }
     console.log(result.ok
       ? `\n  The oracle still matches what worldview/ expects.\n`

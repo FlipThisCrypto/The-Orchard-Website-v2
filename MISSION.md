@@ -45,9 +45,14 @@ monster.
 
 ## The hard realities (design to these, not around them)
 
-- **Cold start:** ~**3 Trees are live today** (first one in Mount Washington, KY). The globe
-  must look intentional and alive with **3** Trees and scale gracefully toward a design target
-  of **100,000** without a redesign.
+- **Cold start:** the network is **tiny, and the design must not pretend otherwise**. As of
+  **2026-08-07** the oracle reported **4 Trees registered, 2 reporting in the last 24 h**
+  (Season 73); the first Tree was planted in Mount Washington, KY. Treat those figures as a
+  snapshot, not a constant — the live numbers are at
+  [worldview.theorchard.network](https://worldview.theorchard.network/) and
+  `oracle.theorchard.network/network/stats`, and `node scripts/check-oracle.mjs` reports when this
+  paragraph has drifted from them. The globe must look intentional and alive at **single digits**
+  and scale gracefully toward a design target of **100,000** without a redesign.
 - **Two audiences over time:** crypto-native early adopters **now**; universities, cities,
   researchers, farmers, insurers, environmental groups **later**. Serve both; alienate neither.
 - **Privacy is already decided and enforced in code:** public location is a coarse **~5 km
@@ -97,4 +102,4 @@ sources, with assumptions flagged. You never invent facts, data, or links.**
 - This repo (canonical for v2) — <https://github.com/FlipThisCrypto/The-Orchard-Website-v2>
 - $JUICE on a Chia explorer — Asset ID `285164e6af80202d2b07fa3cc6ae47ff2906029365a83c50fcab25a56b937121`
 
-*Last updated: 2026-06-17 · maintained by the Lead.*
+*Last updated: 2026-08-07 · maintained by the Lead.*
