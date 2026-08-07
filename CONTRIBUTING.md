@@ -23,7 +23,8 @@ Work only from a **Task Brief** ([template](governance/templates/task-brief.md))
   runs the same command. If you touch `worldview/orchard-data.js`, add tests for what you changed;
   the escaping and id-validation tests are security controls, not decoration.
 - Don't hand-edit generated files (`tasks/TASKS.md`, `dashboard/data.js`) — edit `tasks/tasks.json`
-  and run `node scripts/generate.mjs`.
+  and run `node scripts/generate.mjs`. CI fails if you forget (`--check`). Bump the `updated` field
+  in `tasks.json` when the task data changes; that date is what the board displays.
 - **Never commit secrets** (keys, mnemonics, wallet files, tokens). See [`SECURITY.md`](SECURITY.md).
 - Forking for your own DePIN? Swap the noun — the structure, roles, and templates port cleanly.
 

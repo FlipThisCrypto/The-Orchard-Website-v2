@@ -129,7 +129,7 @@
     <a href="../AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
     <a href="../docs/" target="_blank" rel="noopener">docs/</a> ·
     <a href="../governance/decisions/" target="_blank" rel="noopener">decisions/</a> ·
-    generated <span id="gen">—</span>
+    task data updated <span id="gen">—</span>
   </div>
 </div>
 
@@ -147,7 +147,9 @@
   function render(){
     const tasks = DATA.tasks||[];
     $("repo").textContent = DATA.repo || REPO;
-    $("gen").textContent = window.TASKS_GENERATED || DATA.updated || "—";
+    // The date the task DATA was last updated (from tasks.json) — not when the
+    // file happened to be regenerated, which says nothing about freshness.
+    $("gen").textContent = DATA.updated || window.TASKS_UPDATED || "—";
     // Overall progress is over the tasks that have been AUTHORED — phases with
     // no tasks yet are future work, not completed work. Say so, rather than
     // letting "100%" imply the project is finished.

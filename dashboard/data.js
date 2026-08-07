@@ -634,4 +634,4 @@ window.TASKS = {
     }
   ]
 };
-window.TASKS_GENERATED = "2026-06-17";
+window.TASKS_UPDATED = "2026-06-17";

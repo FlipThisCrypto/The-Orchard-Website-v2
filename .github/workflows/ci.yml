@@ -25,6 +25,11 @@ jobs:
       - name: Unit tests
         run: node --test
 
+      # tasks.json is the source of truth; TASKS.md and dashboard/data.js are
+      # generated from it. Fail if someone edited the JSON without regenerating.
+      - name: Task board is in sync with tasks.json
+        run: node scripts/generate.mjs --check
+
       - name: Syntax-check standalone scripts
         run: |
           set -e

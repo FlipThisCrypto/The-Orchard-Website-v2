@@ -68,6 +68,13 @@ tests/      node --test suite (worldview data logic + security controls)
 node scripts/generate.mjs   # rebuilds tasks/TASKS.md and dashboard/data.js
 ```
 
+The output is a pure function of `tasks.json` (no timestamps), so CI can — and does — verify the
+generated files were not forgotten:
+
+```bash
+node scripts/generate.mjs --check
+```
+
 ## Tests
 
 Zero dependencies — Node's built-in runner, no install step:

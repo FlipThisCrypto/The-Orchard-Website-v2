@@ -3,7 +3,7 @@
 > Auto-generated from `tasks/tasks.json` by `scripts/generate.mjs`. **Do not edit by hand** —
 > edit the JSON and regenerate. Live view: `dashboard/index.html`.
 
-**Overall: 100% complete** — 23/23 tasks · updated 2026-06-17
+**23/23 authored tasks done** (100% of the work planned so far) · 2 later phases not yet planned · task data updated 2026-06-17
 
 ## By advisor
 
@@ -57,4 +57,16 @@ Wireframes, design tokens, globe proof-of-concept.
 | ID | Task | Owner | Status | Pri | Deliverable |
 |---|---|---|---|---|---|
 | ORCH-040 | Globe proof-of-concept (3 real Trees) | Claude Code | ✅ done | P1 | `prototypes/globe-poc/` |
+
+## Phase 3 — Build — not started
+
+Astro shell + globe island + Atlas API on Cloudflare.
+
+_No tasks authored yet._
+
+## Phase 4 — Migrate — not started
+
+Cut over from v1 when at parity.
+
+_No tasks authored yet._
 
