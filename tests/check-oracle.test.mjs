@@ -13,9 +13,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const NODES = CONTRACT['/nodes'];
 const STATS = CONTRACT['/network/stats'];
 
+// A record carrying every field the contract knows about, so "conforming"
+// means conforming — a fixture that lags the contract makes these tests fail
+// for the wrong reason.
 const node = (over = {}) => ({
   node_id: 'A', sensors: [], last_seen_at: null, last_reading_at: null,
-  fw_version: '0.5.1', pass_nft_id: null, geohash: null, ...over,
+  fw_version: '0.5.1', pass_nft_id: null, geohash: null,
+  pass_verified_at: null, registered_at: null, ...over,
 });
 const stats = (over = {}) => ({
   trees_registered: 4, trees_active_24h: 2, readings_total: 10, readings_last_24h: 1,
@@ -25,6 +29,13 @@ const stats = (over = {}) => ({
 test('a conforming response has no problems', () => {
   assert.deepEqual(checkEndpoint([node()], NODES).problems, []);
   assert.deepEqual(checkEndpoint(stats(), STATS).problems, []);
+});
+
+test('the fixture covers every field the contract declares', () => {
+  // Guards these tests against the contract growing past the fixture, which
+  // is what made four of them fail for the wrong reason once.
+  for (const f of Object.keys(NODES.fields)) assert.ok(f in node(), `fixture is missing ${f}`);
+  for (const f of Object.keys(STATS.fields)) assert.ok(f in stats(), `stats fixture is missing ${f}`);
 });
 
 test('a vanished required field is a breaking problem', () => {
