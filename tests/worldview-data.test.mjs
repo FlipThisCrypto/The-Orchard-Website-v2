@@ -171,6 +171,8 @@ const NOW = Date.parse('2026-08-06T12:00:00Z');
 const hoursAgo = (h) => new Date(NOW - h * 3600000).toISOString();
 
 test('stateFrom applies the 2h / 26h freshness thresholds', () => {
+  // With no separate heartbeat the reading doubles as one, so these keep the
+  // old meaning: fresh -> healthy, a while -> idle, a day+ -> offline.
   assert.equal(stateFrom({ last_reading_at: hoursAgo(0) }, NOW), 'healthy');
   assert.equal(stateFrom({ last_reading_at: hoursAgo(1.9) }, NOW), 'healthy');
   assert.equal(stateFrom({ last_reading_at: hoursAgo(2.1) }, NOW), 'idle');
@@ -188,7 +190,7 @@ test('a Tree that has never reported is never called healthy', () => {
 });
 
 test('every state stateFrom can return has a colour', () => {
-  const states = ['new', 'healthy', 'idle', 'offline'];
+  const states = Object.keys(STATE_SHAPE);
   for (const s of states) assert.ok(STATE_COLOR[s], `no colour for ${s}`);
 });
 
@@ -208,7 +210,7 @@ test('ago never describes something that never happened as recent', () => {
 });
 
 test('a timestamp from the future is reported as a clock problem', () => {
-  assert.equal(ago(new Date(NOW + 5 * 365 * 24 * 3600e3).toISOString(), NOW), 'clock ahead of ours');
+  assert.equal(ago(new Date(NOW + 5 * 365 * 24 * 3600e3).toISOString(), NOW), 'ahead of the oracle’s clock');
   // Small drift is normal and still reads as fresh.
   assert.equal(ago(new Date(NOW + 60 * 1000).toISOString(), NOW), 'just now');
 });
@@ -282,7 +284,7 @@ test('normalizeNodes keeps well-formed nodes and drops junk entries', () => {
   ]);
   assert.equal(out.length, 2);
   assert.deepEqual(out[0].sensors, ['ds18b20']);   // non-strings dropped
-  assert.deepEqual(out[1], { node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null, last_reading_at: null });
+  assert.deepEqual(out[1], { node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null, last_reading_at: null, last_seen_at: null });
 });
 
 test('normalizeNodes coerces every field to a known type', () => {
@@ -604,7 +606,7 @@ test('a settled promise leaves no pending deadline behind', async () => {
 const { shapeFor, STATE_SHAPE } = OrchardData;
 
 test('every state stateFrom can return has a distinct shape', () => {
-  const states = ['new', 'healthy', 'idle', 'offline'];
+  const states = ['new', 'healthy', 'idle', 'stale', 'offline'];
   const radii = states.map((s) => shapeFor(s).radius);
   const alts = states.map((s) => shapeFor(s).altitude);
   assert.equal(new Set(radii).size, states.length, 'two states share a radius — they would look identical');
@@ -619,11 +621,11 @@ test('less-healthy Trees are drawn smaller and flatter, monotonically', () => {
 });
 
 test('every state has a plain-language label for the hover card', () => {
-  for (const s of ['new', 'healthy', 'idle', 'offline']) {
+  for (const s of Object.keys(STATE_SHAPE)) {
     assert.match(shapeFor(s).label, /\w/);
-    assert.ok(!/^(new|healthy|idle|offline)$/.test(shapeFor(s).label), `${s} label should read as English, not repeat the key`);
+    assert.ok(!/^(new|healthy|idle|stale|offline|ahead)$/.test(shapeFor(s).label), `${s} label should read as English, not repeat the key`);
   }
-  assert.equal(new Set(Object.values(STATE_SHAPE).map((v) => v.label)).size, 4);
+  assert.equal(new Set(Object.values(STATE_SHAPE).map((v) => v.label)).size, Object.keys(STATE_SHAPE).length);
 });
 
 test('an unknown state degrades to the least-claiming shape', () => {
@@ -644,7 +646,7 @@ test('only the states the oracle can actually justify are implemented', () => {
   // The canonical model has eight. The API exposes one signal, so faking the
   // rest would be inventing confidence — the thing the model forbids.
   const implemented = Object.keys(STATE_SHAPE).sort();
-  assert.deepEqual(implemented, ['healthy', 'idle', 'new', 'offline']);
+  assert.deepEqual(implemented, ['ahead', 'healthy', 'idle', 'new', 'offline', 'stale']);
   for (const s of implemented) assert.ok(STATE_COLOR[s], `${s} has no colour`);
 });
 
@@ -653,6 +655,8 @@ test('the four states are reachable from real timestamps, in order', () => {
   assert.equal(stateFrom({ last_reading_at: hoursAgo(1) }, NOW), 'healthy');
   assert.equal(stateFrom({ last_reading_at: hoursAgo(10) }, NOW), 'idle');
   assert.equal(stateFrom({ last_reading_at: hoursAgo(48) }, NOW), 'offline');
+  // Heartbeat alive but data stopped is the model's Stale-data.
+  assert.equal(stateFrom({ last_seen_at: hoursAgo(1), last_reading_at: hoursAgo(48) }, NOW), 'stale');
 });
 
 test('a never-reported Tree is drawn smaller than a reporting one', () => {
@@ -724,14 +728,14 @@ test('the composition matches what the live snapshot would show', () => {
   assert.equal(c.health, '4 Trees: 4 planted, no Harvest yet');
 });
 
-test('a broken device clock cannot manufacture health', () => {
+test('a timestamp ahead of the oracle is surfaced, not read as fresh', () => {
   // A negative age used to sail through `age < 2` and mark the Tree healthy
   // forever, while the panel said "just now". ESP32s without an RTC report
   // exactly this until NTP lands.
   const future = (h) => new Date(NOW + h * 3600e3).toISOString();
-  assert.equal(stateFrom({ last_reading_at: future(24 * 365 * 5) }, NOW), 'new');
-  assert.equal(stateFrom({ last_reading_at: future(2) }, NOW), 'new');
-  assert.equal(stateFrom({ last_reading_at: future(1) }, NOW), 'new');
+  assert.equal(stateFrom({ last_reading_at: future(24 * 365 * 5) }, NOW), 'ahead');
+  assert.equal(stateFrom({ last_reading_at: future(2) }, NOW), 'ahead');
+  assert.equal(stateFrom({ last_reading_at: future(1) }, NOW), 'ahead');
 });
 
 test('ordinary clock drift is forgiven, not punished', () => {
@@ -747,4 +751,72 @@ test('the panel cannot contradict itself about a never-reported Tree', () => {
   assert.equal(stateFrom(n, NOW), 'new');
   assert.equal(shapeFor(stateFrom(n, NOW)).label, 'planted, no Harvest yet');
   assert.equal(ago(n.last_reading_at, NOW), 'never');
+});
+
+// ---------------------------------------------------------------------------
+// The oracle's clock, and the heartbeat signal. Judging the oracle's
+// timestamps against the VISITOR's clock is what made a correct Tree look
+// either stale or future-dated depending on whose watch was wrong.
+// ---------------------------------------------------------------------------
+const { referenceNow } = OrchardData;
+
+test('referenceNow prefers the oracle clock over the local one', () => {
+  const oracle = '2026-08-07T11:23:41.499548+00:00';
+  assert.equal(referenceNow({ as_of_utc: oracle }, 999), Date.parse(oracle));
+});
+
+test('referenceNow falls back only when the oracle does not say', () => {
+  for (const s of [null, undefined, {}, { as_of_utc: null }, { as_of_utc: 'nonsense' }, 'x', 42]) {
+    assert.equal(referenceNow(s, 12345), 12345, `should fall back for ${JSON.stringify(s)}`);
+  }
+});
+
+test('heartbeat and Harvest recency are distinguished', () => {
+  // The canonical precedence: Offline > Stale-data if there is no heartbeat.
+  const seen = (h) => hoursAgo(h);
+  assert.equal(stateFrom({ last_seen_at: seen(0.5), last_reading_at: hoursAgo(0.5) }, NOW), 'healthy');
+  assert.equal(stateFrom({ last_seen_at: seen(0.5), last_reading_at: hoursAgo(5) }, NOW), 'idle');
+  assert.equal(stateFrom({ last_seen_at: seen(0.5), last_reading_at: hoursAgo(200) }, NOW), 'stale');
+  assert.equal(stateFrom({ last_seen_at: seen(100), last_reading_at: hoursAgo(0.5) }, NOW), 'offline');
+  assert.equal(stateFrom({ last_seen_at: seen(0.5), last_reading_at: null }, NOW), 'new');
+});
+
+test('no heartbeat beats any Harvest recency', () => {
+  // A Tree unreachable for a week is offline even if its last reading looks
+  // recent — that is what the precedence rule is for.
+  assert.equal(stateFrom({ last_seen_at: hoursAgo(168), last_reading_at: hoursAgo(0.1) }, NOW), 'offline');
+});
+
+test('an ahead-of-oracle timestamp in either field is surfaced', () => {
+  const future = new Date(NOW + 4 * 3600e3).toISOString();
+  assert.equal(stateFrom({ last_seen_at: future, last_reading_at: hoursAgo(1) }, NOW), 'ahead');
+  assert.equal(stateFrom({ last_seen_at: hoursAgo(1), last_reading_at: future }, NOW), 'ahead');
+});
+
+test('the wallet address is never read from a node record', async () => {
+  // SECURITY.md: no operator identity or wallet is published with a Tree.
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['worldview/orchard-data.js', 'worldview/app.js']) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    assert.ok(!/wallet_address/.test(src), `${f} reads wallet_address — the privacy contract forbids publishing it`);
+  }
+});
+
+test('normalizeNodes carries every field the state model reads', () => {
+  // The whitelist silently dropped last_seen_at, starving stateFrom of the
+  // heartbeat while the unit tests — which call stateFrom directly — passed.
+  const raw = {
+    node_id: 'A', sensors: ['ds18b20'], fw_version: '1', pass_nft_id: 'x',
+    // Heartbeat fresh, Harvest long stopped: the model's Stale-data.
+    geohash: 'dn6q', last_reading_at: '2026-08-05T00:00:00Z', last_seen_at: '2026-08-07T11:00:00Z',
+  };
+  const [n] = normalizeNodes([raw]);
+  for (const field of ['last_reading_at', 'last_seen_at']) {
+    assert.equal(n[field], raw[field], `normalizeNodes dropped ${field}`);
+  }
+  // And the state derived through the normalizer matches the state derived
+  // from the raw record — the bug was that they disagreed.
+  const now = Date.parse('2026-08-07T11:30:00Z');
+  assert.equal(stateFrom(n, now), stateFrom(raw, now));
+  assert.equal(stateFrom(n, now), 'stale');
 });

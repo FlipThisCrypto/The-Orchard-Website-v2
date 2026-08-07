@@ -90,7 +90,8 @@
       .concat([{ emoji: UNKNOWN_FRUIT.emoji, color: UNKNOWN_FRUIT.color, label: 'Other sensor', hint: UNKNOWN_FRUIT.legend }])
       .concat([
         { emoji: '🌱', color: STATE_COLOR.new, label: 'Planted · no Harvest yet', hint: 'registered, but it has never sent a reading' },
-        { emoji: '○', color: STATE_COLOR.offline, label: 'Not reporting', hint: 'no reading for more than a day — drawn smaller and flatter' },
+        { emoji: '◑', color: STATE_COLOR.stale, label: 'Data has stopped', hint: 'still reachable, but no new Harvest — drawn smaller' },
+        { emoji: '○', color: STATE_COLOR.offline, label: 'Not reporting', hint: 'no heartbeat for more than a day — drawn smallest and flattest' },
       ]);
   }
 
@@ -108,44 +109,77 @@
   // reporting, not what it senses.
   //
   // The canonical model (docs/product/node-states-gamification.md) defines
-  // eight states. The oracle exposes ONE signal — last_reading_at — so only
-  // the four below are honestly derivable. Failed, stale-vs-offline,
-  // withered-recovering and withered-abandoned need signals the API does not
-  // provide (validation status, heartbeat separate from Harvest, admin
-  // markers) and are deliberately not faked. The model's own precedence rule
-  // is that a missing signal shows "unknown", never invented confidence.
-  const STATE_COLOR = { new: '#a3e635', healthy: '#4ade80', idle: '#2bd4d4', offline: '#76907f' };
+  // eight states. The oracle publishes TWO usable signals — last_seen_at
+  // (heartbeat) and last_reading_at (Harvest recency) — which is exactly what
+  // the precedence rule "Offline > Stale-data if no heartbeat" needs, so
+  // stale-data is now real rather than assumed away. (An earlier note here
+  // claimed only one signal existed; that was wrong.) Failed,
+  // withered-recovering and withered-abandoned still need validation status
+  // and admin markers the API doesn't provide, and are not faked. `ahead` is
+  // not from the model: it surfaces timestamps that are ahead of the oracle's
+  // own clock instead of silently reading them as fresh.
+  const STATE_COLOR = { new: '#a3e635', healthy: '#4ade80', idle: '#2bd4d4', stale: '#ff9f2e', offline: '#76907f', ahead: '#e2554f' };
 
   // How a Tree's state shows on the globe WITHOUT motion. The spec's rule is
   // "state via shape/label/badge": colour already carries the data class, so
   // state gets size and height instead. A quiet Tree sits smaller and flatter
   // than a reporting one, which reads at a glance and needs no animation.
   const STATE_SHAPE = {
-    new:     { radius: 0.32, altitude: 0.0060, label: 'planted, no Harvest yet' },
     healthy: { radius: 0.50, altitude: 0.0120, label: 'reporting' },
-    idle:    { radius: 0.38, altitude: 0.0075, label: 'quiet for a while' },
-    offline: { radius: 0.26, altitude: 0.0035, label: 'not reporting' },
+    idle:    { radius: 0.42, altitude: 0.0090, label: 'quiet for a while' },
+    // Reachable but the data has stopped moving — the model's Stale-data,
+    // distinguishable from Offline only because the oracle publishes a
+    // heartbeat separate from Harvest recency.
+    stale:   { radius: 0.36, altitude: 0.0070, label: 'reachable, data has stopped' },
+    new:     { radius: 0.30, altitude: 0.0055, label: 'planted, no Harvest yet' },
+    offline: { radius: 0.24, altitude: 0.0035, label: 'not reporting' },
+    // Timestamps ahead of the oracle's own clock: surfaced, not hidden.
+    ahead:   { radius: 0.30, altitude: 0.0055, label: 'timestamps ahead of the oracle' },
   };
   const shapeFor = (state) => STATE_SHAPE[state] || STATE_SHAPE.offline;
 
-  // Clock skew a Tree is forgiven: ESP32s without an RTC report nonsense until
-  // NTP lands, and a few minutes either way is normal drift, not a signal.
+  // Clock skew a Tree is forgiven: a few minutes either way is normal drift.
   const SKEW_TOLERANCE_H = 0.25;
 
+  /**
+   * The clock to judge freshness against. /network/stats publishes as_of_utc,
+   * and comparing the oracle's timestamps to the VISITOR's clock is what makes
+   * a correct Tree look either stale or future-dated depending on whose watch
+   * is wrong. Falls back to the local clock only when the oracle doesn't say.
+   */
+  function referenceNow(stats, fallback = Date.now()) {
+    const t = stats && stats.as_of_utc ? Date.parse(stats.as_of_utc) : NaN;
+    return Number.isFinite(t) ? t : fallback;
+  }
+
+  /**
+   * Node state from the two signals the oracle actually publishes:
+   * last_seen_at (heartbeat — is it reachable?) and last_reading_at (Harvest
+   * recency — is the data moving?). The canonical precedence is
+   * "Offline > Stale-data if no heartbeat", which needs both.
+   */
   function stateFrom(n, now = Date.now()) {
+    if (!n) return 'new';
+    const hours = (t) => {
+      if (!t) return null;
+      const h = (now - new Date(t)) / 3600000;
+      return Number.isFinite(h) ? h : null;
+    };
+    const reading = hours(n.last_reading_at);
+    const seen = hours(n.last_seen_at != null ? n.last_seen_at : n.last_reading_at);
+
     // Registered but never reported. The model calls this new growth and says
-    // outright: don't imply stable uptime. Calling it "healthy" was a claim
-    // about a Tree that has never sent anything.
-    if (!n || !n.last_reading_at) return 'new';
-    const age = (now - new Date(n.last_reading_at)) / 3600000;
-    if (!Number.isFinite(age)) return 'new';        // unparseable timestamp = no usable signal
-    // A timestamp from the future is a broken clock, not freshness. Left
-    // unchecked it produced a negative age, passed `age < 2`, and marked the
-    // Tree healthy forever.
-    if (age < -SKEW_TOLERANCE_H) return 'new';
-    if (age < 2) return 'healthy';
-    if (age < 26) return 'idle';
-    return 'offline';
+    // outright: don't imply stable uptime.
+    if (reading === null && seen === null) return 'new';
+    // Ahead of the oracle's OWN clock — a data anomaly, not freshness. Left
+    // unchecked a negative age sailed through `< 2` and read as healthy.
+    if ((reading !== null && reading < -SKEW_TOLERANCE_H) || (seen !== null && seen < -SKEW_TOLERANCE_H)) return 'ahead';
+    // No heartbeat wins over any Harvest recency: the device is unreachable.
+    if (seen === null || seen >= 26) return 'offline';
+    if (reading === null) return 'new';              // reachable, but has never harvested
+    if (reading < 2) return 'healthy';
+    if (reading < 26) return 'idle';
+    return 'stale';                                   // reachable, data has stopped moving
   }
 
   function ago(d, now = Date.now()) {
@@ -154,7 +188,7 @@
     if (!d) return 'never';
     const s = (now - new Date(d)) / 1000;
     if (!Number.isFinite(s)) return 'unknown';
-    if (s < -SKEW_TOLERANCE_H * 3600) return 'clock ahead of ours';
+    if (s < -SKEW_TOLERANCE_H * 3600) return 'ahead of the oracle’s clock';
     for (const [n, l] of [[86400, 'd'], [3600, 'h'], [60, 'm']]) {
       if (s >= n) return Math.floor(s / n) + l + ' ago';
     }
@@ -208,6 +242,10 @@
         pass_nft_id: typeof n.pass_nft_id === 'string' ? n.pass_nft_id : null,
         geohash: typeof n.geohash === 'string' ? n.geohash : null,
         last_reading_at: typeof n.last_reading_at === 'string' ? n.last_reading_at : null,
+        // The heartbeat. Omitting it here silently starved stateFrom of half
+        // its signal — the whitelist is only safe if it carries everything
+        // downstream actually reads.
+        last_seen_at: typeof n.last_seen_at === 'string' ? n.last_seen_at : null,
       });
     }
     return out;
@@ -325,7 +363,7 @@
    */
   function composition(trees) {
     const all = Array.isArray(trees) ? trees : [];
-    const stateOrder = ['healthy', 'idle', 'new', 'offline'];
+    const stateOrder = ['healthy', 'idle', 'stale', 'new', 'ahead', 'offline'];
     const stateCount = new Map();
     const classCount = new Map();
     for (const p of all) {
@@ -364,7 +402,7 @@
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor, FRUITS, legendRows,
-    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, ago, treeSummary, networkSummary, composition,
+    STATE_COLOR, STATE_SHAPE, shapeFor, stateFrom, referenceNow, ago, treeSummary, networkSummary, composition,
     normalizeNodes, normalizeStats, lookup, abortAfter, withDeadline,
     LIST_CAP, matchesQuery, listView,
     RING_CAP, ringSet,

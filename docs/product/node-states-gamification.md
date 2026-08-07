@@ -24,25 +24,32 @@ that the network is more alive than it is.
 
 ## What `worldview/` implements today (and what it deliberately doesn't)
 
-The oracle exposes **one** signal for this model: `last_reading_at`. Four states are honestly
-derivable from it; the rest need signals the API doesn't provide, and the precedence rule above —
-*missing signal → never invented confidence* — says to leave them unimplemented rather than guess.
+The oracle publishes **two** usable signals for this model: `last_seen_at` (heartbeat — is the device
+reachable?) and `last_reading_at` (Harvest recency — is the data moving?). That is exactly what the
+precedence rule *"Offline > Stale-data if no heartbeat"* needs, so stale-data is real rather than
+assumed away. Freshness is judged against the oracle's own `as_of_utc`, never the visitor's clock.
 Enforced by `tests/worldview-data.test.mjs`.
 
 | State | Live? | Derived from | On the globe |
 |---|---|---|---|
-| **New growth** | ✅ `new` | registered, `last_reading_at` null (or unparseable) | small, low, `#a3e635`, "planted, no Harvest yet" |
-| **Healthy** | ✅ | last Harvest < 2 h | largest, tallest, `#4ade80`, "reporting" |
-| **Idle** | ✅ | last Harvest 2–26 h | mid, `#2bd4d4`, "quiet for a while" |
-| **Offline** | ✅ | last Harvest > 26 h | smallest, flattest, `#76907f`, "not reporting" |
-| **Stale-data** | ❌ | needs heartbeat separate from Harvest recency | — |
+| **Healthy** | ✅ | heartbeat < 26 h and Harvest < 2 h | largest/tallest, `#4ade80`, "reporting" |
+| **Idle** | ✅ | heartbeat < 26 h, Harvest 2–26 h | `#2bd4d4`, "quiet for a while" |
+| **Stale-data** | ✅ | heartbeat < 26 h, Harvest > 26 h | `#ff9f2e`, "reachable, data has stopped" |
+| **New growth** | ✅ `new` | reachable (or registered) but no Harvest ever | `#a3e635`, "planted, no Harvest yet" |
+| **Offline** | ✅ | no heartbeat for > 26 h | smallest/flattest, `#76907f`, "not reporting" |
+| **(not in the model)** | ✅ `ahead` | timestamps ahead of the oracle's own `as_of_utc` | `#e2554f`, "timestamps ahead of the oracle" |
 | **Failed** | ❌ | needs validation status / fault reporting | — |
-| **Withered — recovering** | ❌ | needs Season history + recovery marker | — |
+| **Withered — recovering** | ❌ | needs Season history + a recovery marker | — |
 | **Withered — abandoned** | ❌ | needs multi-Season absence or an owner/admin mark | — |
 
-Until 2026-08-07 a Tree that had **never reported** was rendered as *healthy* — including three of
-the four live Trees. That contradicted both this table's "don't imply stable uptime" and the
-precedence rule; it is now `new`.
+`ahead` is not one of the model's states. It exists because two live Trees currently carry
+timestamps ~4 h ahead of the oracle's own clock, and both alternatives were false: reading them as
+fresh made them permanently "healthy", and coercing them to `new` claimed they had never harvested.
+Surfacing the anomaly is the honest third option.
+
+Corrections logged here so the record is straight: until 2026-08-07 a Tree that had **never
+reported** rendered as *healthy*, and an earlier note in this file claimed the oracle exposed only
+one signal — it exposes both, and `normalizeNodes` was silently dropping the heartbeat.
 
 ## Signal rules & precedence
 Every state traces to a real signal (heartbeat/check-in · last signed Harvest · current/recent Season

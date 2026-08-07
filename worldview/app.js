@@ -44,7 +44,8 @@ const ORACLE = "https://oracle.theorchard.network";
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
           networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup,
           listView, ringSet, legendRows, abortAfter, withDeadline, shapeFor,
-          composition } = window.OrchardData;
+          composition, referenceNow } = window.OrchardData;
+  let ORACLE_NOW = Date.now();   // replaced by the oracle's as_of_utc each refresh
   let TREES = [];   // the Trees currently shown, in list order
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
@@ -89,12 +90,15 @@ const ORACLE = "https://oracle.theorchard.network";
     if(!live) nodes = normalizeNodes(SNAPSHOT_NODES);
     if(!stats && !live) stats = normalizeStats(SNAPSHOT_STATS);
 
+    // Judge freshness against the oracle's clock, not the visitor's.
+    const oracleNow = referenceNow(stats);
+    ORACLE_NOW = oracleNow;
     const pts=[];
     for(const n of nodes){
       const gh = isGeohash(n.geohash) ? n.geohash.toLowerCase() : null;
       const loc = (gh && ghCenter(gh)) || lookup(LOCATIONS, n.node_id) || null;
       const fruits = fruitsFor(n.sensors);
-      const state = stateFrom(n);
+      const state = stateFrom(n, oracleNow);
       const placed = !!loc;
       const node = { id:n.node_id, short:(n.node_id||"").slice(0,8),
         lat: loc?loc.lat:null, lng: loc?loc.lng:null,
@@ -270,7 +274,7 @@ const ORACLE = "https://oracle.theorchard.network";
     const sc = STATE_COLOR[p.state]||"#76907f";
     $("p-state").innerHTML = `<i style="background:${sc};box-shadow:0 0 8px ${sc}"></i>${esc(shapeFor(p.state).label)}`;
     $("p-fw").textContent = p.fw || "—";
-    $("p-last").textContent = ago(p.last);
+    $("p-last").textContent = ago(p.last, ORACLE_NOW);
     $("p-fruits").innerHTML = p.fruits.length
       ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${esc(f.color)}"></i>${esc(f.emoji)} ${esc(f.type)}</span>`).join("")
       : `<span class="fruit">🌱 no sensors reporting</span>`;
