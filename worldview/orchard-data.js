@@ -100,6 +100,46 @@
     return 'just now';
   }
 
+  // ---- Response shape validation ------------------------------------------
+  // HTTP 200 is not a promise about the body. An oracle that answers
+  // {"error": "..."} , a proxy that answers HTML, or a field that changes type
+  // must all degrade to the snapshot — not throw inside the refresh loop and
+  // leave the page showing old numbers while still claiming to be live.
+  // These return null for "this is not the thing I asked for".
+  function normalizeNodes(raw) {
+    if (!Array.isArray(raw)) return null;
+    const out = [];
+    for (const n of raw) {
+      if (!n || typeof n !== 'object' || Array.isArray(n)) continue;
+      const id = typeof n.node_id === 'string' ? n.node_id : null;
+      if (!id) continue;                                  // a Tree with no id is not addressable
+      out.push({
+        node_id: id,
+        sensors: Array.isArray(n.sensors) ? n.sensors.filter((s) => typeof s === 'string') : [],
+        fw_version: typeof n.fw_version === 'string' ? n.fw_version : null,
+        pass_nft_id: typeof n.pass_nft_id === 'string' ? n.pass_nft_id : null,
+        geohash: typeof n.geohash === 'string' ? n.geohash : null,
+        last_reading_at: typeof n.last_reading_at === 'string' ? n.last_reading_at : null,
+      });
+    }
+    return out;
+  }
+
+  /** Counts only. A missing/!finite count stays null so the UI can say "unknown". */
+  function normalizeStats(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const trees = num(raw.trees_registered);
+    const readings = num(raw.readings_total);
+    if (trees === null && readings === null) return null;   // nothing usable in here
+    return { trees_registered: trees, readings_total: readings };
+  }
+
+  /** Own-property lookup: a node_id of "__proto__" must not reach Object.prototype. */
+  function lookup(map, key) {
+    return typeof key === 'string' && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+  }
+
   // ---- Text for assistive tech --------------------------------------------
   // The globe is a canvas: it cannot describe itself. These build the text
   // that the Tree list, the no-WebGL fallback and the live region all use, so
@@ -117,13 +157,18 @@
 
   function networkSummary(stats, placed, live) {
     const trees = stats && stats.trees_registered != null ? stats.trees_registered : placed;
-    const readings = stats && stats.readings_total != null ? stats.readings_total : 0;
-    return `${trees} Trees, ${Number(readings).toLocaleString('en-US')} harvested readings, ` +
+    // An unknown count is reported as unknown. Saying "0 harvested readings"
+    // when the oracle didn't tell us would be a confident falsehood.
+    const readings = stats && stats.readings_total != null
+      ? Number(stats.readings_total).toLocaleString('en-US') + ' harvested readings'
+      : 'an unknown number of harvested readings';
+    return `${trees} Trees, ${readings}, ` +
       `${placed} shown on the map. Data is ${live ? 'live' : 'from a snapshot'}.`;
   }
 
   return {
     esc, GH, isGeohash, isNftId, ghCenter, classify, fruitsFor,
     STATE_COLOR, stateFrom, ago, treeSummary, networkSummary,
+    normalizeNodes, normalizeStats, lookup,
   };
 });

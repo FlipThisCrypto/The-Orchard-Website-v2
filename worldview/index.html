@@ -97,6 +97,7 @@
   .browse[hidden]{display:none}
   .gnote{margin:9px 0 0;color:var(--muted);font-size:11.5px;max-width:420px}
   .gnote[hidden]{display:none}
+  .dnote{color:var(--orange)}
 
   /* Tree list — the keyboard/touch equivalent of clicking a point */
   .tlist{pointer-events:auto;position:fixed;top:64px;left:20px;width:330px;max-width:calc(100vw - 40px);max-height:calc(100vh - 104px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px 16px 10px;backdrop-filter:blur(11px);box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(-380px);opacity:0;visibility:hidden;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s,visibility 0s linear .35s}
@@ -191,6 +192,9 @@
         <button class="browse" id="loadglobe" hidden>🌍 Load the globe</button>
       </div>
       <p class="gnote" id="globe-note" hidden></p>
+      <!-- Data-path problems get their own line so they can be cleared on
+           recovery without wiping the globe/low-mode message, and vice versa. -->
+      <p class="gnote dnote" id="data-note" role="status" hidden></p>
       <p class="sr-only" id="a11y-status" role="status">Loading the network…</p>
     </div>
 
@@ -262,7 +266,7 @@
   // Pure data logic (classification, node state, geohash, escaping, id checks)
   // lives in orchard-data.js so it can be unit-tested — see tests/.
   const { esc, isGeohash, isNftId, ghCenter, fruitsFor, stateFrom, ago, STATE_COLOR,
-          networkSummary, treeSummary } = window.OrchardData;
+          networkSummary, treeSummary, normalizeNodes, normalizeStats, lookup } = window.OrchardData;
   let TREES = [];   // the Trees currently shown, in list order
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
@@ -275,18 +279,29 @@
   async function load(){
     if(loading) return;          // a refresh is already in flight
     loading=true;
-    try { await refresh(); } finally { loading=false; }
+    // Nothing the oracle can return may break the loop. A thrown refresh would
+    // become an unhandled rejection on the setInterval path and leave the page
+    // showing old numbers while still claiming to be live.
+    try { await refresh(); dataNote(""); }        // success clears any stale warning
+    catch(e){ dataNote("Couldn't read the network just now — showing the last known data."); }
+    finally { loading=false; }
   }
 
   async function refresh(){
-    let nodes, stats, live=true;
-    try { nodes = await getJSON("/nodes"); } catch(e){ live=false; nodes = SNAPSHOT_NODES; }
-    try { stats = await getJSON("/network/stats"); } catch(e){ stats = SNAPSHOT_STATS; }
+    // HTTP 200 is not a promise about the body: an oracle answering
+    // {"error": "..."} or a proxy answering HTML must degrade to the snapshot,
+    // exactly like a failed fetch would.
+    let nodes = null, stats = null;
+    try { nodes = normalizeNodes(await getJSON("/nodes")); } catch(e){ nodes = null; }
+    try { stats = normalizeStats(await getJSON("/network/stats")); } catch(e){ stats = null; }
+    const live = nodes !== null;
+    if(!live) nodes = normalizeNodes(SNAPSHOT_NODES);
+    if(!stats && !live) stats = normalizeStats(SNAPSHOT_STATS);
 
     const pts=[];
     for(const n of nodes){
       const gh = isGeohash(n.geohash) ? n.geohash.toLowerCase() : null;
-      const loc = (gh && ghCenter(gh)) || LOCATIONS[n.node_id] || null;
+      const loc = (gh && ghCenter(gh)) || lookup(LOCATIONS, n.node_id) || null;
       const fruits = fruitsFor(n.sensors);
       const state = stateFrom(n);
       const placed = !!loc;
@@ -299,8 +314,9 @@
       if(placed) pts.push(node);
     }
 
-    $("s-trees").textContent = stats.trees_registered ?? nodes.length;
-    $("s-readings").textContent = (stats.readings_total ?? 0).toLocaleString();
+    // Unknown is shown as unknown — never as a confident zero.
+    $("s-trees").textContent = stats && stats.trees_registered != null ? stats.trees_registered : nodes.length;
+    $("s-readings").textContent = stats && stats.readings_total != null ? stats.readings_total.toLocaleString() : "—";
     $("s-located").textContent = pts.length;
     $("livedot").className = "dot" + (live?" on":"");
     $("livetxt").textContent = live ? "live" : "snapshot";
@@ -487,8 +503,11 @@
     });
   }
 
-  function note(msg){
-    const el = $("globe-note");
+  function note(msg){ setNote("globe-note", msg); }
+  function dataNote(msg){ setNote("data-note", msg); }
+  function setNote(id, msg){
+    const el = $(id);
+    if(el.textContent === (msg || "")) return;   // don't re-announce the same thing
     el.textContent = msg || "";
     el.hidden = !msg;
   }

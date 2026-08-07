@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import OrchardData from '../worldview/orchard-data.js';
 
 const { esc, isGeohash, isNftId, ghCenter, classify, fruitsFor, stateFrom, ago, STATE_COLOR,
-        treeSummary, networkSummary } = OrchardData;
+        treeSummary, networkSummary, normalizeNodes, normalizeStats, lookup } = OrchardData;
 
 // A real Orchard Pass id from the live network (public, on-chain).
 const REAL_PASS = 'nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y';
@@ -238,6 +238,77 @@ test('networkSummary reads as a sentence and distinguishes live from snapshot', 
 });
 
 test('networkSummary falls back to the placed count when stats are missing', () => {
-  assert.equal(networkSummary(null, 3, true), '3 Trees, 0 harvested readings, 3 shown on the map. Data is live.');
-  assert.equal(networkSummary({}, 0, false), '0 Trees, 0 harvested readings, 0 shown on the map. Data is from a snapshot.');
+  // Missing counts read as unknown — claiming "0 harvested readings" when the
+  // oracle never said so would be a confident falsehood.
+  assert.equal(networkSummary(null, 3, true), '3 Trees, an unknown number of harvested readings, 3 shown on the map. Data is live.');
+  assert.equal(networkSummary({}, 0, false), '0 Trees, an unknown number of harvested readings, 0 shown on the map. Data is from a snapshot.');
+});
+
+// ---------------------------------------------------------------------------
+// Response shape validation — HTTP 200 is not a promise about the body.
+// These are the payloads that used to throw inside the refresh loop while the
+// page carried on claiming to be live.
+// ---------------------------------------------------------------------------
+test('normalizeNodes rejects anything that is not a list of nodes', () => {
+  const notLists = [
+    { error: 'database unavailable' },      // an oracle error with HTTP 200
+    { nodes: [] },                          // a shape change
+    '<!doctype html><title>Login</title>',  // a captive portal / proxy
+    'null', null, undefined, 42, true, () => {},
+  ];
+  for (const v of notLists) assert.equal(normalizeNodes(v), null, `should reject ${String(v).slice(0, 30)}`);
+});
+
+test('normalizeNodes keeps well-formed nodes and drops junk entries', () => {
+  const out = normalizeNodes([
+    { node_id: 'A', sensors: ['ds18b20', 42, null], fw_version: '0.5.1', pass_nft_id: 'nft1x', geohash: 'dn6q', last_reading_at: '2026-08-06T00:00:00Z' },
+    { node_id: 'B' },                       // sparse but addressable
+    { sensors: ['x'] },                     // no id -> not addressable
+    null, 'nope', 42, [],                   // junk
+    { node_id: 7 },                         // wrong id type
+  ]);
+  assert.equal(out.length, 2);
+  assert.deepEqual(out[0].sensors, ['ds18b20']);   // non-strings dropped
+  assert.deepEqual(out[1], { node_id: 'B', sensors: [], fw_version: null, pass_nft_id: null, geohash: null, last_reading_at: null });
+});
+
+test('normalizeNodes coerces every field to a known type', () => {
+  const [n] = normalizeNodes([{ node_id: 'A', sensors: 'ds18b20', fw_version: 5, pass_nft_id: {}, geohash: 12, last_reading_at: 99 }]);
+  assert.deepEqual(n.sensors, []);          // a string is not a sensor list
+  assert.equal(n.fw_version, null);
+  assert.equal(n.pass_nft_id, null);
+  assert.equal(n.geohash, null);
+  assert.equal(n.last_reading_at, null);
+});
+
+test('normalizeNodes accepts an empty network', () => {
+  assert.deepEqual(normalizeNodes([]), []);   // [] is valid and live — not a failure
+});
+
+test('normalizeStats returns null rather than inventing numbers', () => {
+  for (const v of [null, undefined, [], 'x', 42, {}, { trees_registered: 'four' }, { readings_total: NaN }, { readings_total: -1 }, { readings_total: Infinity }]) {
+    assert.equal(normalizeStats(v), null, `should reject ${JSON.stringify(v)}`);
+  }
+});
+
+test('normalizeStats keeps the counts it can trust and nulls the rest', () => {
+  assert.deepEqual(normalizeStats({ trees_registered: 4, readings_total: 11605 }), { trees_registered: 4, readings_total: 11605 });
+  assert.deepEqual(normalizeStats({ trees_registered: 4, readings_total: 'lots' }), { trees_registered: 4, readings_total: null });
+  assert.deepEqual(normalizeStats({ readings_total: 10.9 }), { trees_registered: null, readings_total: 10 });
+});
+
+test('an unknown reading count is reported as unknown, not as zero', () => {
+  assert.match(networkSummary({ trees_registered: 4, readings_total: null }, 4, true), /unknown number of harvested readings/);
+  assert.match(networkSummary(null, 3, false), /unknown number of harvested readings/);
+  assert.match(networkSummary({ trees_registered: 4, readings_total: 0 }, 4, true), /0 harvested readings/);
+});
+
+test('lookup cannot be walked into Object.prototype', () => {
+  const map = { REAL: { lat: 1, lng: 2 } };
+  assert.deepEqual(lookup(map, 'REAL'), { lat: 1, lng: 2 });
+  for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf']) {
+    assert.equal(lookup(map, key), null, `${key} must not resolve`);
+  }
+  assert.equal(lookup(map, 'MISSING'), null);
+  assert.equal(lookup(map, 42), null);
 });
