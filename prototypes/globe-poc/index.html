@@ -66,8 +66,25 @@
   /* explorer panel (node click) */
   .panel{pointer-events:auto;position:fixed;top:22px;right:22px;width:300px;max-width:calc(100vw - 44px);
     background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;backdrop-filter:blur(10px);
-    box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(360px);opacity:0;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s}
-  .panel.show{transform:none;opacity:1}
+    box-shadow:0 18px 60px rgba(0,0,0,.55);transform:translateX(360px);opacity:0;visibility:hidden;
+    transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s,visibility 0s linear .35s}
+  /* visibility switches with a 0s transition (delayed only on the way out) so
+     the panel is focusable the instant .show lands — a transitioned visibility
+     still computes to hidden at t=0 and focus() silently fails. */
+  .panel.show{transform:none;opacity:1;visibility:visible;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s,visibility 0s}
+
+  /* Keyboard path to the Trees — the globe is a canvas. */
+  .treelist{pointer-events:auto;align-self:flex-start;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:13px 15px;backdrop-filter:blur(8px);max-width:280px;margin-bottom:10px}
+  .treelist h3{margin:0 0 9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .treelist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .treelist button{width:100%;text-align:left;cursor:pointer;font:inherit;font-size:12.5px;color:var(--text);
+    background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:8px 10px;
+    display:flex;align-items:center;gap:9px}
+  .treelist button:hover{background:rgba(120,230,200,.1);border-color:var(--border2,rgba(120,230,200,.42))}
+  .treelist .tdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .treelist .tmeta{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+  :focus-visible{outline:2px solid var(--green-bright);outline-offset:3px;border-radius:9px}
   .panel::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:16px 16px 0 0;background:var(--holo)}
   .panel .x{position:absolute;top:12px;right:13px;cursor:pointer;color:var(--muted);border:none;background:none;font-size:18px;line-height:1}
   .panel .nid{font-family:var(--mono);font-size:13px;color:var(--cyan)}
@@ -86,7 +103,8 @@
   #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
   #fallback .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:520px}
   #fallback ul{text-align:left;color:var(--muted);font-size:14px;line-height:1.7}
-  @media (max-width:640px){ .legend{display:none} .panel{top:auto;bottom:22px;right:22px;left:22px;width:auto;transform:translateY(360px)} .panel.show{transform:none} }
+  @media (max-width:640px){ .legend{display:none} .treelist{max-width:none}
+    .panel{top:auto;bottom:22px;right:22px;left:22px;width:auto;transform:translateY(360px)} .panel.show{transform:none} }
 </style>
 </head>
 <body>
@@ -101,20 +119,27 @@
     </div>
 
     <div>
+      <!-- The globe is a canvas and can't be reached by keyboard. With three
+           Trees a plain list is all this prototype needs. -->
+      <div class="treelist">
+        <h3 id="tl-h">Trees</h3>
+        <ul id="tl-items" aria-labelledby="tl-h"></ul>
+      </div>
+      <!-- Labels and colours match docs/product/fruit-data-legend.md. -->
       <div class="legend">
         <h3>Fruit = data class</h3>
         <div class="row"><i class="sw" style="background:#ff9f2e"></i> 🍊 Temperature <small>orange</small></div>
         <div class="row"><i class="sw" style="background:#f4d23c"></i> 🍋 Air quality <small>lemon</small></div>
         <div class="row"><i class="sw" style="background:#4f7bff"></i> 🫐 Humidity <small>blueberry</small></div>
         <div class="row"><i class="sw" style="background:#a3e635"></i> 🍐 Pressure <small>pear</small></div>
-        <div class="row"><i class="sw" style="background:#b14aef"></i> 🍇 Multi-sensor <small>grapes</small></div>
+        <div class="row"><i class="sw" style="background:#b14aef"></i> 🍇 Particulates <small>grapes</small></div>
       </div>
       <div class="foot">Representative coarse positions · production reads live <code>node:.geohash</code> (~5 km). Spine for production: deck.gl + MapLibre.</div>
     </div>
   </div>
 
-  <div class="panel" id="panel">
-    <button class="x" id="px" aria-label="Close">✕</button>
+  <div class="panel" id="panel" role="dialog" aria-labelledby="p-id" tabindex="-1" inert>
+    <button class="x" id="px" aria-label="Close Tree details">✕</button>
     <div class="nid" id="p-id">ORCH-0000</div>
     <h2>Tree</h2>
     <div class="reg" id="p-reg"></div>
@@ -145,6 +170,9 @@
   const STATE_COLOR = { healthy:"#4ade80", recovering:"#a3e635", idle:"#2bd4d4", offline:"#76907f", failed:"#e2554f" };
   const FRUIT_COLOR = { "Temperature":"#ff9f2e", "Air quality":"#f4d23c", "Humidity":"#4f7bff", "Pressure":"#a3e635", "Multi-sensor":"#b14aef", "Soil":"#4ade80" };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Declared before the globe is built: the globe assigns WORLD, and `let` is
+  // not initialised until its declaration runs.
+  let WORLD = null, panelOpener = null;
 
   function webglOK(){ try{ const c=document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl"))); }catch(e){ return false; } }
 
@@ -162,7 +190,8 @@
       .pointAltitude(0.012).pointRadius(0.55).pointResolution(18)
       .pointLabel(t=>`<div style="font:13px ui-sans-serif;background:rgba(10,20,16,.92);border:1px solid rgba(120,230,200,.25);border-radius:10px;padding:8px 11px;color:#ecfbf3">
           <b>${t.id}</b><br><span style="color:#a3bcb0">${t.region}</span><br>${t.fruits.map(f=>f.emoji+" "+f.type).join(" · ")}</div>`)
-      .onPointClick(showPanel);
+      .onPointClick(t=>showPanel(t));   // globe.gl passes (point, event) — don't take the event as an opener
+    WORLD = world;
 
     if (!reduce) {
       world.ringsData(TREES).ringLat("lat").ringLng("lng")
@@ -180,7 +209,8 @@
     if (!reduce) setTimeout(()=> world.pointOfView({ lat:38, lng:-85.4, altitude:1.45 }, 2600), 1200);
   }
 
-  function showPanel(t){
+  function showPanel(t, opener){
+    panelOpener = opener || null;
     document.getElementById("p-id").textContent = t.id;
     document.getElementById("p-reg").textContent = "📍 " + t.region;
     const sc = STATE_COLOR[t.state] || "#76907f";
@@ -188,9 +218,47 @@
     document.getElementById("p-uptime").textContent = t.uptimeSeasons + " Seasons";
     document.getElementById("p-sensors").textContent = t.fruits.length;
     document.getElementById("p-fruits").innerHTML = t.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${FRUIT_COLOR[f.type]||'#9fb6f0'}"></i>${f.emoji} ${f.type}</span>`).join("");
-    document.getElementById("panel").classList.add("show");
+    openPanel();
   }
-  document.getElementById("px").onclick = ()=> document.getElementById("panel").classList.remove("show");
+
+  // ---- Keyboard path ------------------------------------------------------
+  // The panel is a real dialog: focus moves in, Escape closes it, focus goes
+  // back to whatever opened it, and while closed it's inert so its ✕ isn't a
+  // dead control sitting in the tab order.
+  const panelEl = ()=>document.getElementById("panel");
+
+  function openPanel(){
+    const el = panelEl();
+    if(!panelOpener) panelOpener = document.activeElement;
+    el.removeAttribute("inert");
+    el.classList.add("show");
+    el.focus({preventScroll:true});
+  }
+  function closePanel(){
+    const el = panelEl();
+    if(!el.classList.contains("show")) return;
+    el.classList.remove("show");
+    if(el.contains(document.activeElement)) document.activeElement.blur();
+    el.setAttribute("inert","");
+    if(panelOpener && document.contains(panelOpener) && panelOpener.offsetParent !== null) panelOpener.focus({preventScroll:true});
+    panelOpener = null;
+  }
+  document.getElementById("px").onclick = closePanel;
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closePanel(); });
+
+  // Three Trees, so a plain list is the whole keyboard story.
+  document.getElementById("tl-items").innerHTML = TREES.map((t,i)=>
+    `<li><button type="button" data-i="${i}" aria-label="${t.id} — ${t.region}, ${t.state}, ${t.fruits.map(f=>f.type).join(', ')}">
+      <i class="tdot" style="background:${STATE_COLOR[t.state]||'#76907f'}"></i>
+      <span><b>${t.id}</b><span class="tmeta">${t.region} · ${t.fruits.map(f=>f.emoji).join(" ")}</span></span>
+    </button></li>`).join("");
+  document.querySelectorAll("#tl-items button").forEach(b=>{
+    b.onclick = ()=>{
+      const t = TREES[+b.dataset.i];
+      if(WORLD && t.lat!=null) WORLD.pointOfView({lat:t.lat, lng:t.lng, altitude:0.8}, reduce?0:900);
+      showPanel(t, b);
+    };
+  });
 </script>
 </body>
 </html>
