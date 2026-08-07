@@ -128,6 +128,10 @@
   };
   const shapeFor = (state) => STATE_SHAPE[state] || STATE_SHAPE.offline;
 
+  // Clock skew a Tree is forgiven: ESP32s without an RTC report nonsense until
+  // NTP lands, and a few minutes either way is normal drift, not a signal.
+  const SKEW_TOLERANCE_H = 0.25;
+
   function stateFrom(n, now = Date.now()) {
     // Registered but never reported. The model calls this new growth and says
     // outright: don't imply stable uptime. Calling it "healthy" was a claim
@@ -135,15 +139,22 @@
     if (!n || !n.last_reading_at) return 'new';
     const age = (now - new Date(n.last_reading_at)) / 3600000;
     if (!Number.isFinite(age)) return 'new';        // unparseable timestamp = no usable signal
+    // A timestamp from the future is a broken clock, not freshness. Left
+    // unchecked it produced a negative age, passed `age < 2`, and marked the
+    // Tree healthy forever.
+    if (age < -SKEW_TOLERANCE_H) return 'new';
     if (age < 2) return 'healthy';
     if (age < 26) return 'idle';
     return 'offline';
   }
 
   function ago(d, now = Date.now()) {
-    if (!d) return 'recently';
+    // "recently" about something that never happened is a lie, and it used to
+    // sit directly under "planted, no Harvest yet" in the same panel.
+    if (!d) return 'never';
     const s = (now - new Date(d)) / 1000;
-    if (!Number.isFinite(s)) return 'recently';
+    if (!Number.isFinite(s)) return 'unknown';
+    if (s < -SKEW_TOLERANCE_H * 3600) return 'clock ahead of ours';
     for (const [n, l] of [[86400, 'd'], [3600, 'h'], [60, 'm']]) {
       if (s >= n) return Math.floor(s / n) + l + ' ago';
     }

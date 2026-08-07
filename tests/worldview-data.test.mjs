@@ -197,8 +197,20 @@ test('ago renders human-readable ages', () => {
   assert.equal(ago(new Date(NOW - 90 * 1000).toISOString(), NOW), '1m ago');
   assert.equal(ago(hoursAgo(5), NOW), '5h ago');
   assert.equal(ago(hoursAgo(50), NOW), '2d ago');
-  assert.equal(ago(null, NOW), 'recently');
-  assert.equal(ago('not-a-date', NOW), 'recently');
+});
+
+test('ago never describes something that never happened as recent', () => {
+  // This read "recently" directly under "planted, no Harvest yet" — the same
+  // panel contradicting itself on adjacent rows.
+  assert.equal(ago(null, NOW), 'never');
+  assert.equal(ago(undefined, NOW), 'never');
+  assert.equal(ago('not-a-date', NOW), 'unknown');   // not the same as never
+});
+
+test('a timestamp from the future is reported as a clock problem', () => {
+  assert.equal(ago(new Date(NOW + 5 * 365 * 24 * 3600e3).toISOString(), NOW), 'clock ahead of ours');
+  // Small drift is normal and still reads as fresh.
+  assert.equal(ago(new Date(NOW + 60 * 1000).toISOString(), NOW), 'just now');
 });
 
 // ---------------------------------------------------------------------------
@@ -710,4 +722,29 @@ test('the composition matches what the live snapshot would show', () => {
   // Four registered Trees, none of which has ever reported.
   const c = composition(Array.from({ length: 4 }, () => withState('new')));
   assert.equal(c.health, '4 Trees: 4 planted, no Harvest yet');
+});
+
+test('a broken device clock cannot manufacture health', () => {
+  // A negative age used to sail through `age < 2` and mark the Tree healthy
+  // forever, while the panel said "just now". ESP32s without an RTC report
+  // exactly this until NTP lands.
+  const future = (h) => new Date(NOW + h * 3600e3).toISOString();
+  assert.equal(stateFrom({ last_reading_at: future(24 * 365 * 5) }, NOW), 'new');
+  assert.equal(stateFrom({ last_reading_at: future(2) }, NOW), 'new');
+  assert.equal(stateFrom({ last_reading_at: future(1) }, NOW), 'new');
+});
+
+test('ordinary clock drift is forgiven, not punished', () => {
+  const future = (mins) => new Date(NOW + mins * 60000).toISOString();
+  assert.equal(stateFrom({ last_reading_at: future(1) }, NOW), 'healthy');
+  assert.equal(stateFrom({ last_reading_at: future(10) }, NOW), 'healthy');
+  assert.equal(stateFrom({ last_reading_at: future(14) }, NOW), 'healthy');
+});
+
+test('the panel cannot contradict itself about a never-reported Tree', () => {
+  // State and last-harvest are rendered as adjacent rows; they must agree.
+  const n = { last_reading_at: null };
+  assert.equal(stateFrom(n, NOW), 'new');
+  assert.equal(shapeFor(stateFrom(n, NOW)).label, 'planted, no Harvest yet');
+  assert.equal(ago(n.last_reading_at, NOW), 'never');
 });
