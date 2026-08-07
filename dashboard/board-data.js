@@ -20,6 +20,24 @@
   const isPlainObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
   const str = (v) => (typeof v === 'string' ? v : null);
 
+  // ---- Render-time escaping ------------------------------------------------
+  // tasks.json is where the Lead files titles written by three external AI
+  // advisors and relayed by hand. Seven of the current titles already contain
+  // "&" and only render by the parser's good grace; a "<" would break the row
+  // outright. Escape at the point of interpolation, never at the boundary
+  // (values are also used as textContent, which must not be double-escaped).
+  const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
+
+  /** A colour is only ever a colour: anything else falls back, never inlined. */
+  const safeColor = (v, fallback = '#888888') =>
+    (typeof v === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim())) ? v.trim() : fallback;
+
+  /** A deliverable path may become a link only if it looks like a repo path. */
+  const isRepoPath = (v) =>
+    typeof v === 'string' && v.length > 0 && v.length <= 200 &&
+    /^[A-Za-z0-9._\-/]+$/.test(v) && !v.includes('..') && !v.startsWith('/');
+
   /**
    * Returns a board safe to render, or null if `raw` isn't a board at all.
    * Null means "keep what you already have" — never "show nothing".
@@ -64,5 +82,5 @@
     return { ...raw, tasks, phases, owners, repo: str(raw.repo) || null, updated: str(raw.updated) || null };
   }
 
-  return { normalizeBoard, isPlainObject };
+  return { normalizeBoard, isPlainObject, esc, safeColor, isRepoPath };
 });

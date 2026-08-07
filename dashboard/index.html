@@ -168,7 +168,7 @@
 <script>
   const REPO = "FlipThisCrypto/The-Orchard-Website-v2";
   const REPO_URL = "https://github.com/"+REPO+"/";
-  const { normalizeBoard } = window.BoardData;
+  const { normalizeBoard, esc, safeColor, isRepoPath } = window.BoardData;
   let DATA = normalizeBoard(window.TASKS) || {tasks:[],phases:[],owners:{}};
   let filter = "all";
   const $ = (id) => document.getElementById(id);
@@ -196,20 +196,21 @@
     for(const [key,ow] of Object.entries(DATA.owners||{})){
       const own = tasks.filter(t=>t.owner===key); const p=pct(own);
       const byStatus={}; own.forEach(t=>byStatus[t.status]=(byStatus[t.status]||0)+1);
-      const br = Object.entries(byStatus).map(([s,n])=>`<span>${n} ${s.replace(/_/g,' ')}</span>`).join("");
+      const br = Object.entries(byStatus).map(([s,n])=>`<span>${n} ${esc(s.replace(/_/g,' '))}</span>`).join("");
+      const accent = safeColor(ow.color);
       // The card carries block content, so it can't be a <button>; give it the
       // full button contract instead — reachable, toggleable with Enter AND
       // Space, and with its on/off state exposed, not just coloured in.
       const el=document.createElement("div"); el.className="lane"+(filter===key?" active":"");
-      el.style.setProperty("--accent",ow.color);
+      el.style.setProperty("--accent",accent);
       el.setAttribute("role","button");
       el.setAttribute("tabindex","0");
       el.setAttribute("aria-pressed", String(filter===key));
       el.setAttribute("aria-label", `${ow.name} — ${ow.seat}. ${own.filter(isDone).length} of ${own.length} tasks done. Filter the board to this seat.`);
-      el.innerHTML=`<div class="lpct" style="color:${ow.color}">${p}%</div>
-        <div class="who"><span class="seatdot" style="background:${ow.color}"></span><b>${ow.name}</b></div>
-        <div class="seat">${ow.seat}</div>
-        <div class="minibar"><i style="width:${p}%;background:${ow.color}"></i></div>
+      el.innerHTML=`<div class="lpct" style="color:${accent}">${p}%</div>
+        <div class="who"><span class="seatdot" style="background:${accent}"></span><b>${esc(ow.name)}</b></div>
+        <div class="seat">${esc(ow.seat)}</div>
+        <div class="minibar"><i style="width:${p}%;background:${accent}"></i></div>
         <div class="br">${br||"<span>no tasks</span>"}</div>`;
       el.dataset.filter=key;
       const toggle=()=>setFilter(filter===key?"all":key, "lane");
@@ -263,27 +264,32 @@
       // A phase with no tasks is NOT complete — it hasn't been planned. Show it
       // as such instead of hiding it, which read as "nothing left to do".
       if(!all.length){
-        sec.innerHTML=`<div class="phase-head"><h3>${ph.title}</h3><span class="pp pp-todo">not started · no tasks authored yet</span></div>
-          <p class="phase-desc">${ph.desc||""}</p>`;
+        sec.innerHTML=`<div class="phase-head"><h3>${esc(ph.title)}</h3><span class="pp pp-todo">not started · no tasks authored yet</span></div>
+          <p class="phase-desc">${esc(ph.desc||"")}</p>`;
         host.appendChild(sec); continue;
       }
       const shown=all.filter(t=>filter==="all"||t.owner===filter);
       const p=pct(all);
-      sec.innerHTML=`<div class="phase-head"><h3>${ph.title}</h3><span class="pp">${p}% · ${all.filter(isDone).length}/${all.length}<span class="mini2"><i style="width:${p}%"></i></span></span></div>
-        <p class="phase-desc">${ph.desc||""}</p>`;
+      sec.innerHTML=`<div class="phase-head"><h3>${esc(ph.title)}</h3><span class="pp">${p}% · ${all.filter(isDone).length}/${all.length}<span class="mini2"><i style="width:${p}%"></i></span></span></div>
+        <p class="phase-desc">${esc(ph.desc||"")}</p>`;
       const rows=document.createElement("div"); rows.className="rows";
       if(!shown.length){ rows.innerHTML=`<div class="row"><div class="ti" style="color:var(--muted2)">No tasks for this filter.</div></div>`; }
       for(const t of shown){
         const ow=(DATA.owners||{})[t.owner]||{name:t.owner,color:"#888"};
         const r=document.createElement("div"); r.className="row";
-        const dp=t.deliverable_path?(t.status==='done'
-          ?`<a class="dp" href="${REPO_URL}${t.deliverable_path.endsWith('/')?'tree':'blob'}/main/${encodeURI(t.deliverable_path)}" target="_blank" rel="noopener">${t.deliverable_path} ↗</a>`
-          :`<span class="dp">${t.deliverable_path}</span>`):"";
-        r.innerHTML=`<div class="id">${t.id}</div>
-          <div class="ti">${t.title}${dp}</div>
-          <div class="own"><span class="seatdot" style="background:${ow.color}"></span>${ow.name}</div>
-          <div class="pri">${t.priority||""}</div>
-          <div class="pill s-${t.status}">${t.status.replace(/_/g,' ')}</div>`;
+        // A deliverable becomes a link only if it looks like a repo path —
+        // otherwise it's shown as text, so a crafted path can't build a URL.
+        const dp=!t.deliverable_path ? ""
+          : (t.status==='done' && isRepoPath(t.deliverable_path)
+            ?`<a class="dp" href="${esc(REPO_URL+(t.deliverable_path.endsWith('/')?'tree':'blob')+'/main/'+encodeURI(t.deliverable_path))}" target="_blank" rel="noopener">${esc(t.deliverable_path)} ↗</a>`
+            :`<span class="dp">${esc(t.deliverable_path)}</span>`);
+        // s-${status} is a class name, so it must not carry spaces or quotes.
+        const statusClass = String(t.status).replace(/[^a-z0-9_-]/gi,"") || "backlog";
+        r.innerHTML=`<div class="id">${esc(t.id)}</div>
+          <div class="ti">${esc(t.title)}${dp}</div>
+          <div class="own"><span class="seatdot" style="background:${safeColor(ow.color)}"></span>${esc(ow.name)}</div>
+          <div class="pri">${esc(t.priority||"")}</div>
+          <div class="pill s-${statusClass}">${esc(String(t.status).replace(/_/g,' '))}</div>`;
         rows.appendChild(r);
       }
       sec.appendChild(rows); host.appendChild(sec);

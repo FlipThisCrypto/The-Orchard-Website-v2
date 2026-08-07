@@ -92,3 +92,68 @@ test('normalizeBoard never mutates its input', () => {
   normalizeBoard(input);
   assert.deepEqual(input, copy);
 });
+
+// ---------------------------------------------------------------------------
+// Render-time escaping. tasks.json carries text written by external advisors
+// and relayed by hand — seven of the current titles already contain "&".
+// ---------------------------------------------------------------------------
+const { esc, safeColor, isRepoPath } = BoardData;
+
+test('esc neutralises everything that can break out of HTML', () => {
+  assert.equal(esc('Brand & voice reference'), 'Brand &amp; voice reference');
+  assert.equal(esc('Lead Dev & Integrator'), 'Lead Dev &amp; Integrator');
+  assert.equal(esc('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
+  assert.equal(esc('" onmouseover="x'), '&quot; onmouseover=&quot;x');
+  assert.equal(esc(null), '');
+  assert.equal(esc(undefined), '');
+});
+
+test('an authored ampersand survives as an ampersand, not an entity', () => {
+  // The failure this prevents is silent: "&amp;" in a title used to render as
+  // "&", quietly changing what the board says a task is called.
+  assert.equal(esc('R&D and &amp; both'), 'R&amp;D and &amp;amp; both');
+});
+
+test('every real task title and owner name escapes to something renderable', () => {
+  for (const t of real.tasks) {
+    const out = esc(t.title);
+    assert.ok(!/[<>]/.test(out), `${t.id} title escaped badly: ${out}`);
+  }
+  for (const o of Object.values(real.owners)) {
+    assert.ok(!/[<>]/.test(esc(o.name) + esc(o.seat)));
+  }
+});
+
+test('safeColor only ever yields a colour', () => {
+  assert.equal(safeColor('#a3e635'), '#a3e635');
+  assert.equal(safeColor('#FFF'), '#FFF');
+  assert.equal(safeColor('  #2bd4d4  '), '#2bd4d4');
+  for (const bad of ['red', 'rgb(1,2,3)', 'url(evil)', '#fff;background:url(x)', '"><img src=x>', '#12345', '', null, 42, {}]) {
+    assert.equal(safeColor(bad), '#888888', `should reject ${String(bad)}`);
+  }
+  assert.equal(safeColor(null, '#000000'), '#000000');
+});
+
+test('every owner colour in the real board is a usable colour', () => {
+  for (const [key, o] of Object.entries(real.owners)) {
+    assert.equal(safeColor(o.color), o.color, `${key} colour was rejected: ${o.color}`);
+  }
+});
+
+test('isRepoPath accepts real deliverable paths and rejects link injection', () => {
+  for (const t of real.tasks) {
+    assert.equal(isRepoPath(t.deliverable_path), true, `${t.id}: ${t.deliverable_path}`);
+  }
+  const bad = [
+    'javascript:alert(1)',
+    'https://evil.example/x',
+    '//evil.example/x',
+    '/etc/passwd',
+    '../../secrets.env',
+    'docs/a b.md',                    // a space would break the attribute
+    'docs/x.md" onmouseover="y',
+    'x'.repeat(201),
+    '', null, undefined, 42,
+  ];
+  for (const v of bad) assert.equal(isRepoPath(v), false, `should reject ${String(v).slice(0, 30)}`);
+});
