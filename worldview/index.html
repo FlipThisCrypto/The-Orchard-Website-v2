@@ -81,6 +81,8 @@
   .fruit .fsw{width:8px;height:8px;border-radius:50%}
   .proof{margin-top:12px;font-size:11.5px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:10px;line-height:1.5}
   .proof a{color:var(--cyan)} .verify{color:var(--green-bright)}
+  .limits{margin-top:9px;font-size:11px;color:var(--muted2);border-top:1px solid rgba(255,255,255,.06);padding-top:9px;line-height:1.5}
+  .limits b{color:var(--muted);font-weight:600}
 
   /* Screen-reader-only text (the globe is a canvas and can't describe itself) */
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
@@ -311,8 +313,15 @@
     <div class="kv"><span>State</span><span class="st" id="p-state"></span></div>
     <div class="kv"><span>Firmware</span><span id="p-fw"></span></div>
     <div class="kv"><span>Last harvest</span><span id="p-last"></span></div>
+    <!-- The spec's Tree view is "fruit/classes + sensor list": the classes are
+         the interpretation, these are the raw keys the device reports. -->
+    <div class="kv"><span>Sensors</span><span id="p-sensors"></span></div>
     <div class="fruits" id="p-fruits"></div>
     <div class="proof" id="p-proof"></div>
+    <!-- "Known limitations / missing data", per the Explorer spec. Silently
+         omitting these makes "no uptime record" indistinguishable from "this
+         page doesn't show uptime". -->
+    <div class="limits" id="p-limits"></div>
   </div>
 
 
@@ -586,11 +595,16 @@
     $("p-fruits").innerHTML = p.fruits.length
       ? p.fruits.map(f=>`<span class="fruit"><i class="fsw" style="background:${esc(f.color)}"></i>${esc(f.emoji)} ${esc(f.type)}</span>`).join("")
       : `<span class="fruit">🌱 no sensors reporting</span>`;
+    // Raw device-reported keys, distinct from the classes they map to.
+    $("p-sensors").textContent = (p.sensors && p.sensors.length) ? p.sensors.join(", ") : "none reported";
     // Only a well-formed Chia NFT id becomes a link; anything else is inert text.
     const passLink = isNftId(p.pass)
       ? `<a href="https://mintgarden.io/nfts/${encodeURIComponent(p.pass)}" target="_blank" rel="noopener">${esc(p.pass.slice(0,14))}… ↗</a>`
-      : (p.pass ? `<span title="unrecognised Pass id">${esc(String(p.pass).slice(0,24))}</span>` : "—");
+      : (p.pass ? `<span title="unrecognised Pass id">${esc(String(p.pass).slice(0,24))}</span>` : "<span>not published for this Tree</span>");
     $("p-proof").innerHTML = `🔒 Coarse region only — never precise GPS.<br><span class="verify">✓ Orchard Pass</span> ${passLink}<br>Readings signed at the source; verifiable on Chia.`;
+    // Name what the oracle doesn't publish, rather than leaving a visitor to
+    // guess whether the Tree has no record or the page just doesn't show it.
+    $("p-limits").innerHTML = `<b>Not published by the oracle yet:</b> Season uptime · device health · $JUICE rewards · DataLayer proof link.`;
     openDialog("panel", opener);
   }
 
