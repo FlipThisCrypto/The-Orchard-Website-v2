@@ -88,11 +88,16 @@ node scripts/generate.mjs --check
 ## Checks
 
 One command runs everything this repo knows how to verify — tests, board sync, script versions,
-and a secrets scan over the tree and all history:
+syntax, and a secrets scan over the tree and all history:
 
 ```bash
 node scripts/checks.mjs
 ```
+
+This is the *only* definition of the gate: CI and the pre-commit hook both invoke it rather than
+keeping their own lists, because when they kept their own lists the three drifted and the check none
+of them shared is the one that broke. The hook runs `--fast` (about two seconds); CI runs the full
+set including the history scan.
 
 Add `--live` to also check that production is running this repo and that the oracle still publishes
 what the page reads. Every script takes `--help`, and refuses a flag it doesn't recognise rather
@@ -125,7 +130,8 @@ anything newly published that the page could be using:
 node scripts/check-oracle.mjs
 ```
 
-And to re-verify SECURITY.md's "no secrets" guarantee over the working tree and all of git history:
+And to re-verify SECURITY.md's "no secrets" guarantee over every file that could reach a commit and
+all of git history (CI runs this too, so it can't quietly rot):
 
 ```bash
 node scripts/scan-secrets.mjs

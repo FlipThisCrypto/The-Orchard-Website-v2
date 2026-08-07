@@ -11,10 +11,15 @@ permissions:
 
 jobs:
   test:
-    name: Tests
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The secrets scan reads every blob ever committed — a credential
+          # deleted later is still exposed. The default shallow clone would
+          # give it one commit to look at and it would pass while blind.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -22,26 +27,17 @@ jobs:
 
       # No dependencies to install — the repo is deliberately zero-dependency
       # and uses Node's built-in test runner.
-      - name: Unit tests
-        run: node --test
-
-      # tasks.json is the source of truth; TASKS.md and dashboard/data.js are
-      # generated from it. Fail if someone edited the JSON without regenerating.
-      - name: Task board is in sync with tasks.json
-        run: node scripts/generate.mjs --check
-
-      - name: Script URLs match their file hashes
-        run: node scripts/stamp-assets.mjs --check
-
-      - name: Syntax-check standalone scripts
-        run: |
-          set -e
-          # Note: CI deliberately does NOT check the live deployment. Pages is
-          # direct-upload, so production legitimately lags the repo between
-          # deploys — failing PRs for that would be noise. Run
-          # `node scripts/check-deployed.mjs` when you want that answer.
-          for f in scripts/*.mjs worldview/*.js dashboard/*.js; do
-            case "$f" in */vendor/*) continue;; esac
-            echo "checking $f"
-            node --check "$f"
-          done
+      #
+      # What runs is defined once, in scripts/checks.mjs, and shared with the
+      # pre-commit hook. It used to be spelled out here AND in the hook AND in
+      # that script, and no two agreed: neither automated gate ran the secrets
+      # scan, which is how it stayed broken for four iterations while
+      # SECURITY.md cited it. A gate that is described in three places is
+      # three gates.
+      #
+      # Deliberately excluded: --live. Pages is direct-upload, so production
+      # legitimately lags the repo between deploys and failing PRs for that
+      # would be noise. Run `node scripts/checks.mjs --live` when you want
+      # that answer.
+      - name: Run the repo's checks
+        run: node scripts/checks.mjs

@@ -82,11 +82,19 @@ function main(argv) {
   const opts = { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 };
   let findings = [];
 
-  // 1. Every tracked file as it is ON DISK — what someone is about to commit,
-  //    not whatever happens to be staged. (Reading the staged blob meant a fix
-  //    in the working tree couldn't clear the scan until it was staged.)
-  const files = execSync('git ls-files', opts).trim().split('\n')
-    .filter((f) => !/vendor\/|\.jpg$|\.min\.js$/.test(f));
+  // 1. Every file that could reach a commit, as it is ON DISK — not whatever
+  //    happens to be staged. (Reading the staged blob meant a fix in the
+  //    working tree couldn't clear the scan until it was staged.)
+  //
+  //    --others includes files git hasn't been told about yet, which is the
+  //    state EVERY new file passes through. Plain `git ls-files` missed them
+  //    entirely: a fresh file holding a live token scanned clean, and the
+  //    check that exists to catch exactly that reported "no secrets found".
+  //    --exclude-standard still honours .gitignore, so ignored working files
+  //    aren't scanned — they can't be committed either.
+  const files = execSync('git ls-files --cached --others --exclude-standard', opts)
+    .trim().split('\n')
+    .filter((f) => f && !/vendor\/|\.jpg$|\.min\.js$/.test(f));
   const declaredFixtures = new Set();
   let unreadable = 0;
   for (const f of files) {
@@ -126,7 +134,7 @@ function main(argv) {
   const real = findings.filter((f) => !isKnownPublic(f));
   const publicRefs = findings.length - real.length;
 
-  console.log(`\n  Scanned ${files.length - unreadable} tracked files and ${seen.size} historical blobs across ${history.length} commits.`);
+  console.log(`\n  Scanned ${files.length - unreadable} working-tree files (tracked and not-yet-added) and ${seen.size} historical blobs across ${history.length} commits.`);
   if (declaredFixtures.size) {
     console.log(`  Skipped ${declaredFixtures.size} file(s) declaring they hold fake credentials: ${[...declaredFixtures].join(', ')}`);
   }

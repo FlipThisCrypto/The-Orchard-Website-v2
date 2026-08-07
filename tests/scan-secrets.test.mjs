@@ -69,3 +69,15 @@ test('this test file is excluded, and says why', () => {
   assert.ok(src.includes(FIXTURE_MARKER), 'the fixtures file must declare itself');
   assert.deepEqual(scanText(src, 'tests/scan-secrets.test.mjs'), []);
 });
+
+test('the tree scan covers files git has not been told about yet', () => {
+  // `git ls-files` alone lists only TRACKED files, so a brand-new file holding
+  // a live token scanned clean — the exact case this check exists for. Every
+  // new file passes through the untracked state, and a fault-injected token in
+  // one was reported "no secrets found" until --others was added.
+  const src = readFileSync(new URL('../scripts/scan-secrets.mjs', import.meta.url), 'utf8');
+  const cmd = src.match(/execSync\('(git ls-files[^']*)'/);
+  assert.ok(cmd, 'expected a git ls-files invocation');
+  assert.match(cmd[1], /--others/, 'untracked files must be scanned');
+  assert.match(cmd[1], /--exclude-standard/, 'but .gitignore must still be honoured');
+});
