@@ -84,3 +84,25 @@ test('every page that renders a canvas also offers the same data as text', () =>
       `${page.file} hides its canvas from assistive tech but has no Tree list to replace it`);
   }
 });
+
+test('every published page offers a visible route to the live network', () => {
+  // The dashboard had none at all, and the prototype mentioned worldview only
+  // inside <meta> tags — both were dead ends pointing away from the product.
+  const LIVE = 'https://worldview.theorchard.network/';
+  for (const page of PAGES) {
+    const html = src[page.file];
+    if (page.file.startsWith('worldview/')) continue;         // it is the live network
+    const body = html.slice(html.indexOf('<body'));            // meta tags don't count
+    assert.ok(body.includes(`href="${LIVE}"`),
+      `${page.file} has no visible link to the live network`);
+  }
+});
+
+test('the GitHub Pages surfaces do not drag in cookie-scoped machinery', () => {
+  // connect.js stores a session cookie scoped to .theorchard.network; on
+  // github.io it cannot work, so it must not be loaded there.
+  for (const page of PAGES.filter((p) => !p.file.startsWith('worldview/'))) {
+    assert.ok(!src[page.file].includes('connect.js'),
+      `${page.file} loads the wallet widget, which cannot work on this origin`);
+  }
+});

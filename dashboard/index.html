@@ -46,6 +46,9 @@
   h1{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:0 0 3px}
   .sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
   .sub code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--cyan)}
+  .live-link{margin:-14px 0 18px;font-size:13px}
+  .live-link a{font-weight:700}
+  .live-link span{color:var(--muted2);margin-left:8px}
   .bnote{margin:-14px 0 18px;color:var(--orange);font-size:12.5px}
   .bnote[hidden]{display:none}
   .boot-error{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:1001;max-width:min(560px,calc(100vw - 32px));
@@ -168,6 +171,10 @@
 <div class="wrap">
   <h1>The Orchard <span class="holo">v2</span> — Mission Control</h1>
   <div class="sub">Live council progress · <code id="repo">FlipThisCrypto/The-Orchard-Website-v2</code> · <span id="freshness">—</span></div>
+  <!-- This board tracks the work; the work itself is a live page. Without this
+       a visitor here had no route to the product at all. -->
+  <p class="live-link"><a href="https://worldview.theorchard.network/">🌳 See the live network →</a>
+    <span>the real Trees, straight from the oracle</span></p>
   <p class="bnote" id="board-note" role="status" hidden></p>
   <!-- Filter results and async chip updates are announced here; the visual
        change alone tells a screen-reader user nothing. -->

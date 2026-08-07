@@ -54,6 +54,8 @@
   @keyframes ping{0%{box-shadow:0 0 0 0 rgba(163,230,53,.5)}70%,100%{box-shadow:0 0 0 9px rgba(163,230,53,0)}}
   .dot.live{animation:ping 2.4s ease-out infinite}
 
+  .superseded{pointer-events:auto;margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+  .superseded a{color:var(--green-bright);font-weight:700}
   .legend{pointer-events:auto;align-self:flex-start;background:var(--panel);border:1px solid var(--border);
     border-radius:14px;padding:13px 15px;backdrop-filter:blur(8px);max-width:230px}
   .legend h2{margin:0 0 9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -118,6 +120,10 @@
       <h1>The <span class="holo">Orchard</span> — Living Globe</h1>
       <p class="sub">A dark Earth where every Tree is a real sensor node bearing fruit. Drag to spin, scroll to zoom, click a Tree to inspect it. <em>This is a throwaway prototype to prove the look &amp; feel.</em></p>
       <span class="pill"><span class="dot live" id="livedot"></span> <span id="count">3 Trees planted</span> · first light in Mount Washington, KY</span>
+      <!-- Its own copy already called this a throwaway prototype; that is only
+           useful if it also says where the real thing is. -->
+      <p class="superseded">Sample data. The live network is at
+        <a href="https://worldview.theorchard.network/">worldview.theorchard.network</a> →</p>
     </div>
 
     <div>
