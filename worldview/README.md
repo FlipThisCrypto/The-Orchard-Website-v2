@@ -32,11 +32,32 @@ The oracle's CORS allows `*.theorchard.network` only. So:
   "snapshot" instead of "live").
 
 ## Deploy (Cloudflare Pages → worldview.theorchard.network)
-1. Create a Pages project whose output is **this `worldview/` folder** (connect this repo and set the
-   output dir, or drag-drop the folder).
-2. Add the **custom domain `worldview.theorchard.network`** to that Pages project (it must be the
-   `theorchard.network` zone so CORS + the shared session cookie work).
-3. Done — it reads the live oracle. No server, no build step; it's a static page + vendored library.
+
+> ⚠️ **A git push does not deploy this page.** The Pages project is **direct-upload**
+> (`Git Provider: No`) — merging a PR and a green CI run both deploy exactly nothing. Someone has to
+> run the command below. Twenty commits of security and reliability work once sat unshipped for a
+> week while every signal in the repo said "done".
+
+```bash
+cd worldview && npx --yes wrangler pages deploy . --project-name orchard-worldview --branch main --commit-dirty=true
+```
+
+- Deploy **from inside `worldview/`** and deploy `.`, so paths land at the site root.
+- `--branch main` targets production rather than a preview. The `*.pages.dev` URL wrangler prints is
+  a preview of that upload — **it is not proof production updated**.
+- If it fails with `Authentication error [code: 10000]` even though `wrangler whoami` works, set
+  `CLOUDFLARE_ACCOUNT_ID` explicitly (`wrangler whoami` prints it) and retry.
+- Right after a deploy the first load can serve the new HTML before its sibling assets propagate, so
+  the page looks broken. Reload once before diagnosing.
+
+Then confirm production is actually running this repo — byte-exact, plus the security headers:
+
+```bash
+node scripts/check-deployed.mjs
+```
+
+The custom domain must be on the `theorchard.network` zone so the oracle's CORS and the shared
+session cookie work. No server and no build step: a static page plus a vendored library.
 
 The live v1 site is untouched; this is a separate page on its own subdomain.
 

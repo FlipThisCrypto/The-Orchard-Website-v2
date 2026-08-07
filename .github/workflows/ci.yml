@@ -33,6 +33,10 @@ jobs:
       - name: Syntax-check standalone scripts
         run: |
           set -e
+          # Note: CI deliberately does NOT check the live deployment. Pages is
+          # direct-upload, so production legitimately lags the repo between
+          # deploys — failing PRs for that would be noise. Run
+          # `node scripts/check-deployed.mjs` when you want that answer.
           for f in scripts/*.mjs worldview/*.js dashboard/board-data.js; do
             case "$f" in */vendor/*) continue;; esac
             echo "checking $f"

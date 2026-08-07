@@ -93,6 +93,13 @@ Zero dependencies — Node's built-in runner, no install step:
 node --test
 ```
 
+Deployment is separate from CI: the Pages project is **direct-upload**, so a push deploys nothing.
+To check whether production is actually running this repo (byte-exact, plus the security headers):
+
+```bash
+node scripts/check-deployed.mjs
+```
+
 Covers the worldview data logic in [`worldview/orchard-data.js`](worldview/orchard-data.js) (fruit
 classification, node-state thresholds, geohash decoding) and the untrusted-input controls that
 `SECURITY.md` promises — escaping and Pass/geohash validation. CI runs the same command on every
