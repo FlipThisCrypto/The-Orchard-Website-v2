@@ -94,7 +94,9 @@ The coordination system itself (`AGENTS.md`, roles, templates, task board, dashb
 [brand & voice reference](brand/brand-and-voice.md); the [Atlas globe architecture](architecture/0001-atlas-globe.md),
 [performance budget](architecture/performance-budget.md), and [data/privacy contract](architecture/atlas-data-privacy-contract.md);
 the four decisions of record ([ADRs](../governance/decisions/)); the [Phase-1 synthesis](PHASE-1-SYNTHESIS.md);
-and the live **[globe proof-of-concept](../prototypes/globe-poc/)**.
+the **[globe proof-of-concept](../prototypes/globe-poc/)**; and then the build phase — the live
+real-data page at **[worldview.theorchard.network](https://worldview.theorchard.network/)**, the
+test suite and CI, and the checks that keep the published surfaces honest.
 
 ## 6. The decisions of record (ADRs)
 
@@ -107,12 +109,28 @@ and the live **[globe proof-of-concept](../prototypes/globe-poc/)**.
 
 ## 7. Results so far
 
-- **Phase 1 (Direction): 100% complete** — 23 seeded tasks done across all three advisors + the Lead.
+**Phase 1 — Direction (the council):**
+
+- **100% complete** — 23 seeded tasks done across all three advisors + the Lead.
 - A single **[synthesis brief](PHASE-1-SYNTHESIS.md)** distilling everything into locked build direction.
-- A **live globe proof-of-concept** (dark Earth, the real Trees, fruit-as-data, click-to-inspect) and a
+- A **globe proof-of-concept** (dark Earth, the Trees, fruit-as-data, click-to-inspect) and a
   **live mission-control dashboard** — both on GitHub Pages.
 - Notably, the three advisors **independently converged** on the same spine — *infrastructure first,
   the token supports it, show real density not fake* — a strong signal the direction is coherent.
+
+**Phase 3 — Build (the Lead, alone):** the council's method was designed for *coordinating* work.
+The build phase tested what happens when the Lead is the one writing the code, with no advisor to
+grade it. Nine tasks, recorded on the same board:
+
+- **[worldview.theorchard.network](https://worldview.theorchard.network/)** — the globe on real
+  oracle data: keyboard- and screen-reader-navigable, its 3D engine off the critical path, surviving
+  a lost GPU context, bounding what it draws as the network grows, and refusing to state anything it
+  can't evidence.
+- **A test suite and CI** where there had been neither — now 193 tests, plus a pre-commit hook
+  running the same gate.
+- **Checks for the things CI can't see**: whether production is actually running this repo
+  (`scripts/check-deployed.mjs`), and whether the oracle still publishes what the page reads
+  (`scripts/check-oracle.mjs`).
 
 ## 8. Replicate it — the playbook
 
@@ -141,4 +159,31 @@ Want to run your own AI council? The whole skeleton is in this repo; here's the 
 - **Transparency compounds.** Logging decisions as ADRs and keeping the dashboard honest meant
   anyone could see exactly where things stood, at any time.
 
-*Last updated: 2026-06-17 · maintained by the Lead.*
+### From the build phase — what an AI Lead gets wrong when nobody is grading it
+
+The council method puts a reviewer between every advisor and the repo. When the Lead builds, that
+reviewer is missing. These are the failures that produced, each traceable in the git history:
+
+- **Confident and wrong is the default failure mode, not silence.** The page reported Trees as
+  *healthy* that had never sent a reading; said *"Last harvest: recently"* about a Tree that had
+  never harvested; and showed *"100% complete"* for a project that hadn't started building. None of
+  these looked like bugs. They looked like a working page.
+- **A gate you can pass while failing is not a gate.** Tests were run before a commit — inside a
+  shell chain that checked whether output *appeared* rather than whether it said `fail 0`. The
+  commit landed red. The fix wasn't discipline, it was a pre-commit hook that relies on exit codes.
+- **Verify against the real thing, not your fixtures.** A field whitelist silently dropped the
+  oracle's heartbeat signal. Every unit test passed, because they called the function directly. Only
+  driving the actual page against the actual API showed the wrong answer on screen.
+- **Suspect yourself before the other system.** Two Trees appeared to carry timestamps four hours in
+  the future, and the Lead reported it as an oracle data-quality problem — in two commit messages
+  and a canonical doc. It was this page parsing offset-less timestamps in the visitor's local
+  timezone. The oracle had been right the whole time.
+- **"Done" in the repo is not "shipped" to users.** Twenty commits of security and reliability work
+  sat unshipped for a week while CI was green and the board said done, because the Pages project is
+  direct-upload and a push deploys nothing. Nothing in the repo could answer *"is production
+  actually running this?"* until something was built that could.
+- **Write down what you deliberately did not do.** Several fields are unimplemented because the API
+  can't support them honestly. Recording *that*, next to the ones that are live, is what stops the
+  next person assuming they were forgotten.
+
+*Last updated: 2026-08-07 · maintained by the Lead.*
