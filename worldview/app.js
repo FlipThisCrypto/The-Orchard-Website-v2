@@ -56,7 +56,11 @@ const ORACLE = (location.hostname === "localhost" || location.hostname === "127.
   const DECLARED_CELLS = {};
   // A human name for a cell, where one is known. A place name carries no
   // precision, so it is safe to write by hand in a way a coordinate is not.
-  const CELL_NAMES = { dng01: "Shepherdsville, KY", dng04: "Shepherdsville, KY" };
+  const CELL_NAMES = {
+    dng00: "Shepherdsville, KY",   // the live Tree's declared cell
+    dng01: "Shepherdsville, KY",
+    dng04: "Shepherdsville, KY"
+  };
   const cellLabel = (gh) => (CELL_NAMES[gh] ? CELL_NAMES[gh] + " · " : "") + "~5 km cell " + gh;
   // The offline fallback: what the page shows when the oracle can't be reached
   // (an outage, or previewing off an *.theorchard.network origin).
