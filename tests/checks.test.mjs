@@ -25,8 +25,14 @@ test('the network checks are never automatic', () => {
   // the default gate, every commit would depend on Cloudflare and the oracle
   // being up — and CI would fail on the true statement that a direct-upload
   // deploy hasn't happened yet.
+  //
+  // Matched by full script path, not by substring. A bare `check-oracle` also
+  // matches `tests/check-oracle.test.mjs` — the offline unit test FOR that
+  // script — so the moment the gate listed its test files explicitly, this
+  // assertion started failing on a test that never opens a socket. What it
+  // means is "the network scripts", so that is what it now says.
   for (const c of selectChecks()) {
-    assert.ok(!/check-deployed|check-oracle/.test((c.argv || []).join(' ')),
+    assert.ok(!/scripts[/\\]check-(deployed|oracle)\.mjs/.test((c.argv || []).join(' ')),
       `${c.name} reaches the network but runs by default`);
   }
 });

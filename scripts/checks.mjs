@@ -33,6 +33,34 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Directories whose .js/.mjs files must parse. */
 const SYNTAX_DIRS = ['scripts', 'worldview', 'dashboard'];
 
+/**
+ * Directories this repo runs unit tests from.
+ *
+ * This used to be a bare `node --test`, which discovers test files by walking
+ * the whole working directory. That quietly means "every test file anyone has
+ * ever left in this folder", including work-in-progress from a separate project
+ * that is not tracked by this repo at all — and when those fail, every commit
+ * here is blocked for a reason that has nothing to do with this repo.
+ *
+ * A gate must be able to say what it covers. Naming the directories makes the
+ * boundary a decision: adding a suite is one deliberate line, and nothing gets
+ * swept in by virtue of sitting on the same disk.
+ */
+const TEST_DIRS = ['tests'];
+
+function testFiles() {
+  const out = [];
+  for (const dir of TEST_DIRS) {
+    for (const f of readdirSync(join(root, dir), { withFileTypes: true })) {
+      if (f.isFile() && /\.test\.(mjs|js)$/.test(f.name)) out.push(join(dir, f.name));
+    }
+  }
+  // A test runner handed no files passes vacuously, which is the worst
+  // possible outcome for a gate — it reports green having checked nothing.
+  if (!out.length) throw new Error(`no test files found under ${TEST_DIRS.join(', ')}`);
+  return out;
+}
+
 function scriptsToParse() {
   const out = [];
   for (const dir of SYNTAX_DIRS) {
@@ -53,7 +81,7 @@ function scriptsToParse() {
 // under a second, the middle tier lost its only member, and a distinction
 // nothing justifies is a distinction that will drift.
 export const CHECKS = [
-  { name: 'unit tests', tier: 'always', argv: ['--test'] },
+  { name: 'unit tests', tier: 'always', argv: ['--test', ...testFiles()] },
   { name: 'task board in sync', tier: 'always', argv: ['scripts/generate.mjs', '--check'] },
   { name: 'script versions stamped', tier: 'always', argv: ['scripts/stamp-assets.mjs', '--check'] },
   // A stale hash here doesn't degrade anything — the browser refuses to run
