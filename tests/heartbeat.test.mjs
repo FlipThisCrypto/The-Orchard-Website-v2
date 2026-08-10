@@ -201,3 +201,50 @@ test('an unparseable timestamp is null, not silently zero', () => {
   assert.equal(clockDriftMinutes('not a time'), null);
   assert.equal(clockDriftMinutes(null), null);
 });
+
+test('chain-pipeline: readings loud + chain quiet warns', async () => {
+  // The failure that used to be invisible: Trees posting, writer stalled.
+  const now = Date.now();
+  const stats = {
+    trees_registered: 1, trees_active_24h: 1,
+    readings_total: 10, readings_last_24h: 5, attestations_total: 9,
+    current_season: 76, as_of_utc: new Date(now).toISOString(),
+    last_reading_at: new Date(now - 3600e3).toISOString(),        // 1h ago
+    last_attestation_at: new Date(now - 3 * 86400e3).toISOString(), // 3d ago
+  };
+  const o = await origin({ '/nodes': [200, goodNodes], '/network/stats': [200, stats] });
+  const probes = await probeOracle(o.base);
+  await o.close();
+  const probe = probes.find((p) => p.id === 'chain-pipeline');
+  assert.ok(probe, 'the probe must exist when both fields are present');
+  assert.equal(probe.ok, false);
+  assert.match(probe.detail, /stalled or refusing/);
+});
+
+test('chain-pipeline: a fresh attestation passes', async () => {
+  const now = Date.now();
+  const stats = {
+    trees_registered: 1, trees_active_24h: 1,
+    readings_total: 10, readings_last_24h: 5, attestations_total: 9,
+    current_season: 76, as_of_utc: new Date(now).toISOString(),
+    last_reading_at: new Date(now - 3600e3).toISOString(),
+    last_attestation_at: new Date(now - 6 * 3600e3).toISOString(), // 6h ago
+  };
+  const o = await origin({ '/nodes': [200, goodNodes], '/network/stats': [200, stats] });
+  const probe = (await probeOracle(o.base)).find((p) => p.id === 'chain-pipeline');
+  await o.close();
+  assert.equal(probe.ok, true);
+});
+
+test('chain-pipeline: an oracle without the fields skips the probe', async () => {
+  const now = Date.now();
+  const stats = {
+    trees_registered: 1, trees_active_24h: 1,
+    readings_total: 10, readings_last_24h: 5, attestations_total: 9,
+    current_season: 76, as_of_utc: new Date(now).toISOString(),
+  };
+  const o = await origin({ '/nodes': [200, goodNodes], '/network/stats': [200, stats] });
+  const probe = (await probeOracle(o.base)).find((p) => p.id === 'chain-pipeline');
+  await o.close();
+  assert.equal(probe, undefined, 'an older oracle is not a stalled pipeline');
+});

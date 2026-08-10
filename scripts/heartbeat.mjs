@@ -133,6 +133,29 @@ export async function probeOracle(base = ORACLE) {
       detail: drift === null ? `unparseable as_of_utc: ${stats.as_of_utc}` : `as_of_utc is ${drift.toFixed(1)} min from now`,
     });
 
+    // Readings loud, chain quiet: the one pipeline failure that used to be
+    // invisible from outside. Exit codes and ops journals live on the
+    // operator's box, so a DataLayer writer that had been refusing for a week
+    // looked identical to a healthy quiet one. The oracle now publishes
+    // last_attestation_at / last_reading_at precisely so this probe can
+    // exist: warn when Trees are posting but nothing has reached the chain
+    // for over two days (attestation is daily, so one missed day is slack,
+    // two is a stall). Absent fields skip the probe — an older oracle is not
+    // a stalled pipeline.
+    const lastAtt = Date.parse(stats.last_attestation_at ?? '');
+    const lastRead = Date.parse(stats.last_reading_at ?? '');
+    if (Number.isFinite(lastRead) && Number.isFinite(lastAtt)) {
+      const readFresh = Date.now() - lastRead < 24 * 3600 * 1000;
+      const chainStale = Date.now() - lastAtt > 48 * 3600 * 1000;
+      probes.push({
+        id: 'chain-pipeline', severity: 'warn',
+        ok: !(readFresh && chainStale),
+        detail: readFresh && chainStale
+          ? `readings flowing but last attestation ${((Date.now() - lastAtt) / 86400000).toFixed(1)}d ago — the writer is stalled or refusing`
+          : `last attestation ${Number.isFinite(lastAtt) ? ((Date.now() - lastAtt) / 3600000).toFixed(1) + 'h ago' : 'never'}`,
+      });
+    }
+
     // QUIET, not FAIL. An orchard with nothing reporting is a real condition
     // worth seeing, but it is a fact about the network, not a fault in the
     // site — and paging someone because trees are asleep is how alerts die.
