@@ -25,10 +25,30 @@ function declaredCells() {
   return cells;
 }
 
-test('declared locations are geohash cells, not coordinates', () => {
+test('no location is hand-written into the page script', () => {
+  // This assertion used to be the opposite — "expected at least one declared
+  // location" — because the table was the only thing that could place a Tree,
+  // and an empty one meant someone had deleted the map by accident.
+  //
+  // It became the wrong guarantee. Every entry was a node_id typed in by hand,
+  // and by the time the ghost Trees were retired all four named Trees that no
+  // longer existed, while the one live Tree was absent and therefore drawn
+  // nowhere. The table did not fail; it succeeded at showing the wrong thing.
+  //
+  // Locations come from the oracle now — a wallet-signed assertion by the Tree's
+  // owner, or the Tree's own GPS — so an empty table is the correct state and a
+  // populated one is a regression toward maintaining hardware positions by
+  // editing JavaScript.
   const cells = declaredCells();
-  assert.ok(Object.keys(cells).length > 0, 'expected at least one declared location');
-  for (const [node, gh] of Object.entries(cells)) {
+  assert.equal(Object.keys(cells).length, 0,
+    `worldview must not hand-place Trees; the oracle publishes locations. Found: ${JSON.stringify(cells)}`);
+});
+
+test('any location that IS hand-written is still a legal cell', () => {
+  // The table is empty and should stay empty, but the entry-level guarantees
+  // outlive that decision: if a future emergency puts a cell back, it must
+  // still be a real geohash, not a coordinate pair wearing a string.
+  for (const [node, gh] of Object.entries(declaredCells())) {
     assert.ok(isGeohash(gh), `${node} declares "${gh}", which is not a geohash`);
   }
 });

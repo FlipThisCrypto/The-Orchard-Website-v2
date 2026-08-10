@@ -36,15 +36,24 @@ const ORACLE = (location.hostname === "localhost" || location.hostname === "127.
   // promised ~5 km they are two cells, not four points.
   //
   // A DECLARED_PRECISION-character geohash cannot carry a finer position than
-  // its cell, so over-precision is now unrepresentable rather than forbidden.
-  // The oracle's own geohash still takes precedence when it publishes one, and
-  // takes the identical code path.
-  const DECLARED_CELLS = {
-    "0C59BF4E1F5B815E08AC3D7669593A5E": "dng01",
-    "7DD309EE736A19EA19E6ABF9C5172528": "dng01",
-    "D65F96E44E0EB1CB21F2C01B8C7C89D4": "dng01",
-    "F04EC2E3B76077374BE9142CF91D2CE9": "dng04"
-  };
+  // its cell, so over-precision is unrepresentable rather than forbidden.
+  //
+  // This table is now EMPTY, and should stay that way. Every entry it used to
+  // hold was a node_id typed into this file by hand, and by 2026-08-09 all four
+  // of them had been retired — so the map was drawing dead Trees while the one
+  // live Tree, which is not in the table, was drawn nowhere. Editing a JS file
+  // is not a way to keep track of where hardware is.
+  //
+  // Declaring a location is the oracle's job now: an operator connects their
+  // wallet and asserts a cell for a Tree they own, and the oracle publishes it
+  // in `geohash` with `location_source: "declared"`. That arrives through the
+  // same field as a device GPS fix and takes the identical code path here, so
+  // this page does not need to know the difference — it only needs to stop
+  // pretending it knows where anything is.
+  //
+  // Kept as an empty object rather than deleted so the fallback stays a single
+  // named concept, and so re-adding a hand-placed dot is a visible act.
+  const DECLARED_CELLS = {};
   // A human name for a cell, where one is known. A place name carries no
   // precision, so it is safe to write by hand in a way a coordinate is not.
   const CELL_NAMES = { dng01: "Shepherdsville, KY", dng04: "Shepherdsville, KY" };
@@ -57,14 +66,11 @@ const ORACLE = (location.hostname === "localhost" || location.hostname === "127.
   // "snapshot" beside a hard number is not, and this is the path a visitor
   // lands on precisely when things are broken. `node scripts/snapshot.mjs
   // --check` fails the build once it rots.
-  const SNAPSHOT_CAPTURED_AT = "2026-08-07T15:27:45.659Z";
+  const SNAPSHOT_CAPTURED_AT = "2026-08-10T00:02:32.787Z";
   const SNAPSHOT_NODES = [
-    {"node_id":"7DD309EE736A19EA19E6ABF9C5172528","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-07-26T23:47:51.359575","last_reading_at":"2026-07-26T23:47:51.359575","pass_verified_at":"2026-06-16T22:08:52.413084","registered_at":"2026-06-16T22:08:52.083860","label":null},
-    {"node_id":"0C59BF4E1F5B815E08AC3D7669593A5E","sensors":["ds18b20","gps"],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-07-26T13:46:01.121846","last_reading_at":"2026-07-26T13:46:01.121846","pass_verified_at":"2026-06-16T09:11:06.411151","registered_at":"2026-06-16T09:11:04.370897","label":null},
-    {"node_id":"D65F96E44E0EB1CB21F2C01B8C7C89D4","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-08-07T15:17:10.119722","last_reading_at":"2026-08-07T15:17:10.119722","pass_verified_at":"2026-06-16T09:09:18.689447","registered_at":"2026-06-16T09:09:17.128684","label":null},
-    {"node_id":"F04EC2E3B76077374BE9142CF91D2CE9","sensors":[],"fw_version":"0.5.1","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-08-07T15:17:20.192656","last_reading_at":"2026-08-07T15:17:20.192656","pass_verified_at":"2026-06-16T09:05:36.780324","registered_at":"2026-06-16T09:05:36.198748","label":null}
+    {"node_id":"D8641AD6CAE36977818499469F7E8C49","sensors":["ds18b20","gps"],"fw_version":"0.6.0","pass_nft_id":"nft1dqvx2acr658krs0tmxhvjl4apz420gku2lmcyefgdcxm48jt5d9sutp32y","geohash":null,"last_seen_at":"2026-08-09T23:53:03.865841","last_reading_at":"2026-08-09T23:53:03.865841","pass_verified_at":"2026-08-08T14:32:45.385136","registered_at":"2026-08-08T02:47:12.061647","label":null}
   ];
-  const SNAPSHOT_STATS = {"trees_registered":4,"trees_active_24h":2,"readings_total":216725,"readings_last_24h":2744,"attestations_total":0,"current_season":73,"as_of_utc":"2026-08-07T15:28:35.033228+00:00"};
+  const SNAPSHOT_STATS = {"trees_registered":1,"trees_active_24h":1,"readings_total":220503,"readings_last_24h":2137,"attestations_total":185,"current_season":76,"as_of_utc":"2026-08-10T00:03:13.274632+00:00"};
   // Live, not latched: someone who turns the preference on mid-session should
   // get a still globe from the next refresh, not on their next visit.
   const motionQuery = matchMedia("(prefers-reduced-motion: reduce)");
