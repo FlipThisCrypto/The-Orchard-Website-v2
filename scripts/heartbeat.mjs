@@ -33,6 +33,12 @@ const { parseOracleTime } = OrchardData;
  *  cached or frozen data. Generous enough to absorb clock skew on either end. */
 export const ORACLE_CLOCK_TOLERANCE_MIN = 20;
 
+/** How long a demonstrably-alive Tree may go silent before it is a fault.
+ *  A live Tree posts ~23 readings an hour, so three empty hours is not noise —
+ *  and every dark hour is unearnable and unrecoverable, because a season
+ *  settles once and cannot be backfilled. Waiting longer only costs more. */
+export const TREE_DARK_AFTER_H = 3;
+
 const TIMEOUT_MS = 15000;
 
 async function get(url) {
@@ -50,6 +56,43 @@ export function clockDriftMinutes(asOfUtc, now = Date.now()) {
   const t = parseOracleTime(asOfUtc);
   if (!Number.isFinite(t)) return null;
   return (now - t) / 60000;
+}
+
+/**
+ * A Tree that was demonstrably alive and has now stopped mid-stream.
+ *
+ * `network-active` below deliberately treats silence as QUIET, because an
+ * orchard where nothing reported is a fact about the network, not a fault.
+ * That rule is right for an empty orchard and wrong for this one: a Tree that
+ * logged 552 readings yesterday and nothing since 04:00 is not asleep, it has
+ * lost power or WiFi, and every hour it stays dark is earnings that cannot be
+ * recovered. Season 76 credited 9 hours of 24 across two separate outages and
+ * the owner found out days later, from a settlement report.
+ *
+ * The two conditions together are what make this safe to alert on:
+ * something reported within 24h (so the orchard is not merely empty) AND
+ * nothing has arrived for hours (so it stopped rather than never started).
+ * It also quiets itself: once the gap passes 24h, trees_active_24h falls to
+ * zero and this returns to QUIET rather than shouting forever.
+ *
+ * Returns null when the probe does not apply — an empty orchard, or an oracle
+ * too old to publish the fields. Absent data is not evidence of failure.
+ */
+export function treeDarkProbe(stats, now = Date.now()) {
+  const active = Number(stats?.trees_active_24h);
+  if (!Number.isFinite(active) || active <= 0) return null;
+  const last = parseOracleTime(stats?.last_reading_at ?? '');
+  if (!Number.isFinite(last)) return null;
+  const hours = (now - last) / 3600000;
+  // Negative means the oracle's clock leads ours; that is skew, not silence.
+  const dark = hours > TREE_DARK_AFTER_H;
+  return {
+    id: 'tree-went-dark', severity: 'fail', ok: !dark,
+    detail: dark
+      ? `${active} Tree(s) active in 24h but nothing for ${hours.toFixed(1)}h `
+        + `— powered down or off WiFi; those hours cannot be earned back`
+      : `last reading ${Math.max(0, hours).toFixed(1)}h ago`,
+  };
 }
 
 /** Turn probe results into a verdict. Pure, so the severity rules are testable. */
@@ -142,8 +185,12 @@ export async function probeOracle(base = ORACLE) {
     // for over two days (attestation is daily, so one missed day is slack,
     // two is a stall). Absent fields skip the probe — an older oracle is not
     // a stalled pipeline.
-    const lastAtt = Date.parse(stats.last_attestation_at ?? '');
-    const lastRead = Date.parse(stats.last_reading_at ?? '');
+    // parseOracleTime, not Date.parse: these arrive without an offset, and
+    // Date.parse reads an offset-less stamp as LOCAL time. On the UTC runner
+    // that is invisibly correct; run from a machine four hours off UTC it
+    // invented a four-hour gap out of nothing. Same trap as iteration 34.
+    const lastAtt = parseOracleTime(stats.last_attestation_at ?? '');
+    const lastRead = parseOracleTime(stats.last_reading_at ?? '');
     if (Number.isFinite(lastRead) && Number.isFinite(lastAtt)) {
       const readFresh = Date.now() - lastRead < 24 * 3600 * 1000;
       const chainStale = Date.now() - lastAtt > 48 * 3600 * 1000;
@@ -151,10 +198,13 @@ export async function probeOracle(base = ORACLE) {
         id: 'chain-pipeline', severity: 'warn',
         ok: !(readFresh && chainStale),
         detail: readFresh && chainStale
-          ? `readings flowing but last attestation ${((Date.now() - lastAtt) / 86400000).toFixed(1)}d ago — the writer is stalled or refusing`
+          ? `readings flowing but last attestation ${((Date.now() - lastAtt) / 86400000).toFixed(1)}d ago — the writer is stalled, refusing, or sealing without reporting back`
           : `last attestation ${Number.isFinite(lastAtt) ? ((Date.now() - lastAtt) / 3600000).toFixed(1) + 'h ago' : 'never'}`,
       });
     }
+
+    const dark = treeDarkProbe(stats);
+    if (dark) probes.push(dark);
 
     // QUIET, not FAIL. An orchard with nothing reporting is a real condition
     // worth seeing, but it is a fact about the network, not a fault in the

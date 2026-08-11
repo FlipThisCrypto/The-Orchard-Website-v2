@@ -9,7 +9,7 @@ import { createServer } from 'node:http';
 import { SITES } from '../scripts/check-deployed.mjs';
 import {
   probePage, probeOracle, probeDeployDrift, verdict, clockDriftMinutes,
-  ORACLE_CLOCK_TOLERANCE_MIN,
+  ORACLE_CLOCK_TOLERANCE_MIN, treeDarkProbe,
 } from '../scripts/heartbeat.mjs';
 
 const HEADERS = {
@@ -218,7 +218,7 @@ test('chain-pipeline: readings loud + chain quiet warns', async () => {
   const probe = probes.find((p) => p.id === 'chain-pipeline');
   assert.ok(probe, 'the probe must exist when both fields are present');
   assert.equal(probe.ok, false);
-  assert.match(probe.detail, /stalled or refusing/);
+  assert.match(probe.detail, /stalled, refusing, or sealing without reporting back/);
 });
 
 test('chain-pipeline: a fresh attestation passes', async () => {
@@ -247,4 +247,48 @@ test('chain-pipeline: an oracle without the fields skips the probe', async () =>
   const probe = (await probeOracle(o.base)).find((p) => p.id === 'chain-pipeline');
   await o.close();
   assert.equal(probe, undefined, 'an older oracle is not a stalled pipeline');
+});
+
+// --- a Tree that stopped mid-stream is not a sleeping Tree ------------------
+
+const darkAgo = (h) => new Date(Date.now() - h * 3600000)
+  .toISOString().replace('Z', '');       // the oracle publishes no offset
+
+test('an empty orchard is QUIET, not dark — the probe does not apply', () => {
+  assert.equal(treeDarkProbe({ trees_active_24h: 0, last_reading_at: darkAgo(99) }), null);
+});
+
+test('an oracle too old to publish last_reading_at is not a failure', () => {
+  assert.equal(treeDarkProbe({ trees_active_24h: 1 }), null);
+});
+
+test('a Tree with readings flowing passes', () => {
+  assert.equal(treeDarkProbe({ trees_active_24h: 1, last_reading_at: darkAgo(0.2) }).ok, true);
+});
+
+test('a live Tree silent past the threshold fails, loudly enough to email', () => {
+  const p = treeDarkProbe({ trees_active_24h: 1, last_reading_at: darkAgo(6) });
+  assert.equal(p.ok, false);
+  assert.equal(p.severity, 'fail');   // only 'fail' reaches a human; see the workflow
+  assert.match(p.detail, /cannot be earned back/);
+});
+
+test('the alarm quiets itself once the orchard reads as empty again', () => {
+  // Past 24h dark, trees_active_24h falls to zero: it stops rather than
+  // failing every hour forever, which is how an alert gets muted.
+  assert.equal(treeDarkProbe({ trees_active_24h: 0, last_reading_at: darkAgo(30) }), null);
+});
+
+test('offset-less oracle stamps are read as UTC, not local time', () => {
+  // Date.parse calls an offset-less stamp local. Four zones from UTC that
+  // invents a four-hour gap and fails a perfectly healthy Tree.
+  const p = treeDarkProbe({ trees_active_24h: 1,
+                            last_reading_at: new Date().toISOString().replace('Z', '') });
+  assert.equal(p.ok, true);
+});
+
+test('an oracle clock that leads ours is skew, not silence', () => {
+  const p = treeDarkProbe({ trees_active_24h: 1, last_reading_at: darkAgo(-0.1) });
+  assert.equal(p.ok, true);
+  assert.ok(!p.detail.includes('-'), `negative age leaked: ${p.detail}`);
 });
